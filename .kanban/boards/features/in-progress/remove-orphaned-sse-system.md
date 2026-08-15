@@ -2,16 +2,16 @@
 version: 1
 id: 'remove-orphaned-sse-system'
 boardId: 'features'
-status: 'groomed'
+status: 'in-progress'
 priority: 'high'
 assignee: null
 dueDate: null
 created: '2026-08-15T07:35:45.480Z'
-modified: '2026-08-15T07:42:10.000Z'
+modified: '2026-08-15T08:20:48.750Z'
 completedAt: null
 labels: ['story']
 attachments: []
-order: 'a0'
+order: 'a0V'
 metadata:
   feature: 'project-imported-code-cleanup'
 ---
@@ -26,7 +26,7 @@ Delete the imported SSE client and the rules section describing it, so nothing i
 
 ### Phase 1 — SSE client and its rules section removed
 
-- [ ] Complete initial implementation
+- [x] Complete initial implementation
   - Delete `public/js/app-ui/sse-manager.mjs` in its entirety. It exports a single `sseManager` singleton and has zero importers anywhere in `public/js/` — verified by searching for the string `sse-manager` across `public/js/**/*.mjs`, which returns no matches.
   - Create `public/js/app-ui/.gitkeep` so the now-empty `app-ui/` directory survives a git clone. `.claude/rules/client.md` still directs app-specific components there, and its rules reference `app-ui/forms.mjs`, `app-ui/themed-base.mjs` (`AppHeader`), and `app-ui/hamburger-menu.mjs` as destinations for future work.
   - Delete the entire `## Task Progress SSE Patterns` section from `.claude/rules/client.md` — the heading, its `### SSEManager event coalescing` subheading, and all five bullets beneath it. The section runs from the `## Task Progress SSE Patterns` line to the line immediately before `## Save/Revert Pattern (settings and persistent records)`. Leave the `## Logging` section above it and the `## Save/Revert Pattern` section below it untouched.

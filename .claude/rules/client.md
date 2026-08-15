@@ -132,17 +132,6 @@ log('source', 'error', 'message')
 - Output format is `[source] message`.
 - Do not call `console.log`, `console.warn`, or `console.error` directly. Use the `log()` function with a stable source name.
 
-## Task Progress SSE Patterns
-
-### SSEManager event coalescing
-
-- `SSEManager` (in `public/js/app-ui/sse-manager.mjs`) batches events via `setTimeout(0)` before dispatching. This prevents replayed completed tasks from firing multiple `onComplete` calls.
-- Pruning rule in `_flushEvents`: if a terminal event (`complete`/`error`/`cancelled`) is present in the batch, discard all `progress` events and dispatch only the terminal. If no terminal: discard all `progress` except the last, dispatch that one.
-- Transient-error rule in `_handleError`: an `onerror` with `readyState === CONNECTING` (browser auto-reconnecting) must NOT kill the subscription — the server keeps completed tasks (with their full message buffer, including terminal events) for 5 minutes and replays the buffer on reconnect, so the completion arrives after the retry. Only `readyState === CLOSED` cleans up (silently, deferred one tick); other states surface `onError` and unsubscribe. The 2-minute inactivity timeout remains the backstop.
-- The `/progress/:taskId` heartbeat is a NAMED SSE event (`event: heartbeat`, every 30s), not a comment — comments never reach EventSource JS. `SSEManager` listens for it and resets the inactivity timeout without dispatching to callbacks, so the timeout only fires on a genuinely dead stream, never on a slow-but-alive task that legitimately goes minutes between progress events.
-- Terminal events must carry everything the client needs in their payload. A client handler that re-fetches a REST endpoint on `complete` races any server-side write that happens in the task's post-completion `.then()` — that write lands AFTER the event was emitted. Read from the event's `result`, not from a follow-up fetch.
-- `ProgressBanner` fast-complete bypass: if `handleComplete` fires before any `progress` event was received (`hadProgressRef.current === false`), skip the banner display and call `onComplete`/`onDismiss` immediately — the task was already done when the subscription opened.
-
 ## Save/Revert Pattern (settings and persistent records)
 
 Use `useFormRecord` from `app-ui/forms.mjs` (create it with the first form that needs it) to manage dirty state. Derive button enable states via `formButtonStates(recorded, dirty)`. On save: call the API → `markSaved(newData)`. On revert: confirm via `showDialog` → reset form state to `savedData`. Config-style forms that always exist set `recorded = true` always and omit delete.

@@ -1,17 +1,18 @@
 ---
 version: 1
 id: 'port-data-versioning-infrastructure'
-boardId: 'features'
-status: 'in-progress'
+status: 'done'
 priority: 'high'
 assignee: null
 dueDate: null
 created: '2026-08-15T07:55:00.000Z'
-modified: '2026-08-15T08:06:28.366Z'
+modified: '2026-08-15T08:19:25.402Z'
 completedAt: null
-labels: ['story']
-attachments: []
-order: 'a0V'
+labels:
+  - 'story'
+attachments:
+  - 'port-data-versioning-infrastructure.log'
+order: 'a0'
 metadata:
   feature: 'project-imported-code-cleanup'
 ---
