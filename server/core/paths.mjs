@@ -16,7 +16,7 @@ export const PROJECT_ROOT = path.resolve(SERVER_DIR, '..')
 /** Path to `server/database/` */
 export const DATABASE_DIR = path.join(SERVER_DIR, 'database')
 
-/** Path to `server/storage/` (generated media) */
+/** Path to `server/storage/` (in-game assets: character portraits and other material displayed on screen) */
 export const STORAGE_DIR = path.join(SERVER_DIR, 'storage')
 
 /** Path to `server/logs/` */

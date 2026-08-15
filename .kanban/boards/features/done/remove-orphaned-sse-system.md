@@ -1,17 +1,18 @@
 ---
 version: 1
 id: 'remove-orphaned-sse-system'
-boardId: 'features'
-status: 'in-progress'
+status: 'done'
 priority: 'high'
 assignee: null
 dueDate: null
 created: '2026-08-15T07:35:45.480Z'
-modified: '2026-08-15T08:20:48.750Z'
+modified: '2026-08-15T08:24:16.185Z'
 completedAt: null
-labels: ['story']
-attachments: []
-order: 'a0V'
+labels:
+  - 'story'
+attachments:
+  - 'remove-orphaned-sse-system.log'
+order: 'Zz'
 metadata:
   feature: 'project-imported-code-cleanup'
 ---

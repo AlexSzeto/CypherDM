@@ -2,16 +2,16 @@
 version: 1
 id: 'remove-leftover-server-rules'
 boardId: 'features'
-status: 'groomed'
+status: 'in-progress'
 priority: 'medium'
 assignee: null
 dueDate: null
 created: '2026-08-15T07:35:45.480Z'
-modified: '2026-08-15T07:55:00.000Z'
+modified: '2026-08-15T08:25:58.019Z'
 completedAt: null
 labels: ['polish']
 attachments: []
-order: 'a1'
+order: 'a0V'
 metadata:
   feature: 'project-imported-code-cleanup'
 ---
@@ -26,7 +26,7 @@ Clear the last few server-side rules and paths that describe the previous projec
 
 ### Phase 1 — Leftover server rules and paths cleared
 
-- [ ] Complete initial implementation
+- [x] Complete initial implementation
   - In `.claude/rules/server.md` under `### Design Patterns`, delete the `- **Child-process output**:` bullet in its entirety. It mandates `attachOutputTap` and `createErrorSink` from `server/core/process-output-tap.mjs` (a file that does not exist) in order to supervise a long-lived spawned external process. CypherDM spawns no managed child process and the design spec implies none, so this rule is removed permanently rather than deferred. Leave the four surrounding bullets — `**Service Layer**`, `**Repository Pattern**`, `**Dependency Injection**`, and `**Logging**` — untouched.
   - In `server/core/paths.mjs`, change the JSDoc above `STORAGE_DIR` from `/** Path to \`server/storage/\` (generated media) */` to describe in-game assets — character portraits and other material displayed on screen. Keep the export name and its value (`path.join(SERVER_DIR, 'storage')`) exactly as they are. Nothing imports it yet; the directory is being repurposed, not retired.
   - In `.gitignore`, remove exactly two lines: `server/temp/` and `runtime/`. Both are runtime directories from the previous project's media pipeline and nothing in this repo reads or writes them.
