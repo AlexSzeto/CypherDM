@@ -1,0 +1,99 @@
+{
+  "version": 2,
+  "boards": {
+    "features": {
+      "name": "Features",
+      "columns": [
+        {
+          "id": "backlog",
+          "name": "Backlog",
+          "color": "#4b5563"
+        },
+        {
+          "id": "planned",
+          "name": "Planned",
+          "color": "#6b7280"
+        },
+        {
+          "id": "groomed",
+          "name": "Groomed",
+          "color": "#3b82f6"
+        },
+        {
+          "id": "in-progress",
+          "name": "In Progress",
+          "color": "#f59e0b"
+        },
+        {
+          "id": "done",
+          "name": "Done",
+          "color": "#22c55e"
+        },
+        {
+          "id": "abandoned",
+          "name": "Abandoned",
+          "color": "#ef4444"
+        }
+      ],
+      "defaultStatus": "backlog",
+      "defaultPriority": "medium",
+      "nextCardId": 1,
+      "minimizedColumnIds": ["abandoned"],
+      "metadata": {
+        "feature": {
+          "description": "Parent feature rollout this card belongs to",
+          "highlighted": true
+        }
+      }
+    }
+  },
+  "defaultBoard": "features",
+  "kanbanDirectory": ".kanban",
+  "aiAgent": "claude",
+  "defaultPriority": "medium",
+  "defaultStatus": "backlog",
+  "nextCardId": 1,
+  "showPriorityBadges": true,
+  "showAssignee": false,
+  "showDueDate": false,
+  "showLabels": true,
+  "showBuildWithAI": false,
+  "showFileName": true,
+  "cardViewMode": "large",
+  "markdownEditorMode": false,
+  "showDeletedColumn": false,
+  "boardZoom": 100,
+  "cardZoom": 100,
+  "boardBackgroundMode": "fancy",
+  "boardBackgroundPreset": "aurora",
+  "port": 2955,
+  "drawerPosition": "right",
+  "labels": {
+    "feature": {
+      "color": "#eab308",
+      "group": "category"
+    },
+    "story": {
+      "color": "#3b82f6",
+      "group": "category"
+    },
+    "blocker": {
+      "color": "#dc2626",
+      "group": "category"
+    },
+    "defect": {
+      "color": "#f97316",
+      "group": "category"
+    },
+    "polish": {
+      "color": "#22c55e",
+      "group": "category"
+    },
+    "idea": {
+      "color": "#8b5cf6",
+      "group": "category"
+    }
+  },
+  "panelMode": "drawer",
+  "drawerWidth": 42.67857142857142
+}

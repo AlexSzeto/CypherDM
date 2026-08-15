@@ -1,0 +1,3104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Custom UI Component Test Page</title>
+
+    <!-- Import Map for bare module specifiers -->
+    <script type="importmap">
+      {
+        "imports": {
+          "preact": "https://esm.sh/preact@10.19.2",
+          "preact/": "https://esm.sh/preact@10.19.2/",
+          "preact/hooks": "https://esm.sh/preact@10.19.2/hooks",
+          "htm/preact": "https://esm.sh/htm@3.1.1/preact?external=preact",
+          "goober": "https://esm.sh/goober@2.1.14?external=preact"
+        }
+      }
+    </script>
+
+    <!-- Material Symbols for icons -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+      rel="stylesheet"
+    />
+
+    <!-- Box Icons for icon support (fallback) -->
+    <script src="https://unpkg.com/boxicons@latest/dist/boxicons.js"></script>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <script type="module">
+      import { html, render, Component } from 'htm/preact'
+      import { styled, css } from './goober-setup.mjs'
+      import { Page } from './layout/page.mjs'
+      import { currentTheme, toggleTheme } from './theme.mjs'
+      import { Button } from './io/button.mjs'
+      import { Panel } from './layout/panel.mjs'
+      import { Input } from './io/input.mjs'
+      import { Select } from './io/select.mjs'
+      import { Textarea } from './io/textarea.mjs'
+      import { Checkbox } from './io/checkbox.mjs'
+      import { ButtonGroup } from './nav/button-group.mjs'
+      import { NavigatorControl } from './nav/navigator.mjs'
+      import { usePagination } from './nav/use-pagination.mjs'
+      import { useItemNavigation } from './nav/use-item-navigation.mjs'
+      import { showListSelect } from './overlays/list-select.mjs'
+      import { ImageSelect } from './media/image-select.mjs'
+      import { AudioSelect } from './media/audio-select.mjs'
+      import { AudioPlayer } from './media/audio-player.mjs'
+      import { VideoPlayer } from './media/video-player.mjs'
+      import { globalBgmPlayer } from './global-audio-player.mjs'
+      import { ProgressProvider, useProgress } from './msg/progress-context.mjs'
+      import { ToastProvider, useToast } from './msg/toast.mjs'
+      import { showDialog, showTextPrompt } from './overlays/dialog.mjs'
+      import { Modal, createImageModal, showModal } from './overlays/modal.mjs'
+      import {
+        HoverPanelProvider,
+        useHoverPanel,
+      } from './overlays/hover-panel.mjs'
+      import { useRef, useState, useEffect } from 'preact/hooks'
+      import { Icon, ICON_MAP } from './layout/icon.mjs'
+      import { RangeSlider } from './io/range-slider.mjs'
+      import { Slider } from './io/slider.mjs'
+      import { DiscreteSlider } from './io/discrete-slider.mjs'
+      import { ToggleSwitch } from './io/toggle-switch.mjs'
+      import { MultiSelect } from './io/multi-select.mjs'
+      import { TabPanels } from './nav/tab-panels.mjs'
+      import { FloatingPanel } from './overlays/floating-panel.mjs'
+      import { DynamicList } from './layout/dynamic-list.mjs'
+      import { SearchSelectModal } from './overlays/search-select.mjs'
+      import { TransitionViewer } from './media/transition-viewer.mjs'
+      import { Pill } from './io/pill.mjs'
+      import { ContentEditablePillInput } from './io/content-editable-pill-input.mjs'
+      import { useAutocomplete } from './io/use-autocomplete.mjs'
+      import { AutocompleteDropdown } from './io/autocomplete-dropdown.mjs'
+      import { CollapsiblePanel } from './layout/collapsible-panel.mjs'
+
+      // =========================================================================
+      // Styled Components
+      // =========================================================================
+
+      /**
+       * Main container for the test page content
+       */
+      const Container = styled('div')`
+        padding: 24px;
+        max-width: 1200px;
+        margin: 0 auto;
+      `
+
+      /**
+       * Header with flex layout for title and theme toggle
+       */
+      const Header = styled('header')`
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 32px;
+      `
+
+      /**
+       * Page title with no margin (handled by Header)
+       */
+      const Title = styled('h1')`
+        margin: 0;
+      `
+
+      /**
+       * Muted text paragraph
+       */
+      const MutedText = styled('p')`
+        margin-bottom: 24px;
+        opacity: 0.7;
+      `
+
+      /**
+       * SectionWrapper — outer margin shell, used internally by Section below.
+       */
+      const SectionWrapper = styled('section')`
+        margin-bottom: 48px;
+      `
+
+      /**
+       * Section — collapsible section.
+       * First child must be a SectionTitle; it becomes the CollapsiblePanel header.
+       * Remaining children become the collapsible content.
+       * This doubles as the CollapsiblePanel usage example.
+       */
+      function Section({ children }) {
+        const [expanded, setExpanded] = useState(false)
+        const childArray = []
+          .concat(children || [])
+          .filter((c) => c != null && c !== false && c !== '')
+        const header = childArray[0]
+        const content = childArray.slice(1)
+        return html`
+        <${SectionWrapper}>
+          <${CollapsiblePanel}
+            header=${header}
+            content=${html`<div style=${{ paddingTop: '12px' }}>${content}</div>`}
+            expanded=${expanded}
+            onExpand=${() => setExpanded((e) => !e)}
+          />
+        </${SectionWrapper}>
+      `
+      }
+
+      /**
+       * Section title with bottom border
+       */
+      const SectionTitle = styled('h2')`
+        border-bottom: 1px solid currentColor;
+        padding-bottom: 8px;
+        opacity: 0.5;
+      `
+
+      /**
+       * Category header for grouping component sections
+       */
+      const CategoryHeader = styled('h1')`
+        margin-top: 48px;
+        margin-bottom: 24px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid currentColor;
+        opacity: 0.8;
+        font-size: 28px;
+      `
+
+      /**
+       * Flex container for component demos
+       */
+      const ComponentGrid = styled('div')`
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 16px;
+      `
+
+      /**
+       * Placeholder text for coming soon sections
+       */
+      const ComingSoon = styled('p')`
+        opacity: 0.6;
+      `
+
+      // =========================================================================
+      // Toast Test Component
+      // =========================================================================
+
+      /**
+       * ToastTriggers - Component with buttons to trigger different toast variants
+       */
+      function ToastTriggers() {
+        const toast = useToast()
+
+        return html`
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <${Button}
+              variant="medium-text"
+              color="success"
+              onClick=${() => toast.success('Operation completed successfully!')}
+            >
+              Show Success Toast
+            <//>
+            <${Button}
+              variant="medium-text"
+              color="danger"
+              onClick=${() => toast.error('An error occurred!')}
+            >
+              Show Error Toast
+            <//>
+            <${Button}
+              variant="medium-text"
+              color="primary"
+              onClick=${() => toast.show('This is an informational message.')}
+            >
+              Show Info Toast
+            <//>
+            <${Button}
+              variant="medium-text"
+              color="primary"
+              onClick=${() => toast.show('Custom duration message', { type: 'info', duration: 8000 })}
+            >
+              Show Long Duration Toast (8s)
+            <//>
+          </div>
+        `
+      }
+
+      // =========================================================================
+      // Navigation Demo Components
+      // =========================================================================
+
+      /**
+       * PageBasedNavigationDemo - Demonstrates usePagination hook with PaginationControls
+       */
+      function PageBasedNavigationDemo() {
+        const mockData = Array.from({ length: 50 }, (_, i) => ({
+          id: i + 1,
+          name: `Item ${i + 1}`,
+        }))
+        const pagination = usePagination(mockData, 10)
+
+        return html`
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <p style="opacity: 0.7; font-size: 14px;">
+              Showing items
+              ${pagination.currentPage * pagination.itemsPerPage + 1}-${Math.min((pagination.currentPage + 1) * pagination.itemsPerPage, pagination.totalItems)}
+              of ${pagination.totalItems}
+            </p>
+            <${NavigatorControl}
+              currentPage=${pagination.currentPage}
+              totalPages=${pagination.totalPages}
+              onPrev=${pagination.goToPrev}
+              onNext=${pagination.goToNext}
+              onFirst=${pagination.goToFirst}
+              onLast=${pagination.goToLast}
+              showFirstLast=${true}
+            />
+          </div>
+        `
+      }
+
+      /**
+       * ItemBasedNavigationDemo - Demonstrates useItemNavigation hook with PaginationControls
+       */
+      function ItemBasedNavigationDemo({ items, selected, onSelect }) {
+        const nav = useItemNavigation(items, selected || items[0])
+
+        // Sync nav.currentItem with parent's selected state
+        if (nav.currentItem && nav.currentItem !== selected) {
+          onSelect(nav.currentItem)
+        }
+
+        return html`
+          <div style="display: flex; flex-direction: column; gap: 12px;">
+            <p style="opacity: 0.7; font-size: 14px;">
+              Current: ${nav.currentItem?.name || 'None'}
+              (${nav.currentIndex + 1} of ${nav.totalItems})
+            </p>
+            <${NavigatorControl}
+              currentPage=${nav.currentIndex}
+              totalPages=${nav.totalItems}
+              onPrev=${nav.selectPrev}
+              onNext=${nav.selectNext}
+              onFirst=${nav.selectFirst}
+              onLast=${nav.selectLast}
+              showFirstLast=${false}
+            />
+          </div>
+        `
+      }
+
+      // =========================================================================
+      // Dialog Test Component
+      // =========================================================================
+
+      /**
+       * DialogTriggers - Component with buttons to trigger different dialog variants
+       */
+      function DialogTriggers() {
+        const toast = useToast()
+
+        const handleBasicDialog = () => {
+          showDialog(
+            'This is a basic dialog with default close button.',
+            'Basic Dialog',
+          )
+        }
+
+        const handleConfirmDialog = async () => {
+          const result = await showDialog(
+            'Are you sure you want to delete this item? This action cannot be undone.',
+            'Confirm Delete',
+            ['Delete', 'Cancel'],
+          )
+          if (result === 'Delete') {
+            toast.success('Item deleted successfully!')
+          } else {
+            toast.show('Delete cancelled')
+          }
+        }
+
+        const handleMultiOptionDialog = async () => {
+          const result = await showDialog(
+            'Choose how you want to proceed with this operation:',
+            'Select Action',
+            ['Save and Exit', 'Save', 'Discard Changes'],
+          )
+          toast.show(`You selected: ${result}`)
+        }
+
+        const handleTextPrompt = async () => {
+          const folderName = await showTextPrompt(
+            'Enter folder name',
+            'My New Folder',
+            'Folder name...',
+          )
+          if (folderName) {
+            toast.success(`Folder "${folderName}" created!`)
+          } else {
+            toast.show('Folder creation cancelled')
+          }
+        }
+
+        const handleEmptyPrompt = async () => {
+          const value = await showTextPrompt('Enter a value')
+          if (value !== null) {
+            toast.show(`You entered: "${value}"`)
+          }
+        }
+
+        return html`
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <${Button}
+              variant="medium-text"
+              color="primary"
+              onClick=${handleBasicDialog}
+            >
+              Show Basic Dialog
+            <//>
+            <${Button}
+              variant="medium-text"
+              color="danger"
+              onClick=${handleConfirmDialog}
+            >
+              Show Confirm Dialog (Destructive)
+            <//>
+            <${Button}
+              variant="medium-text"
+              color="primary"
+              onClick=${handleMultiOptionDialog}
+            >
+              Show Multi-Option Dialog
+            <//>
+            <${Button}
+              variant="medium-text"
+              color="secondary"
+              onClick=${handleTextPrompt}
+            >
+              Show Text Prompt (with initial value)
+            <//>
+            <${Button}
+              variant="medium-text"
+              color="secondary"
+              onClick=${handleEmptyPrompt}
+            >
+              Show Text Prompt (empty)
+            <//>
+          </div>
+        `
+      }
+
+      // =========================================================================
+      // Hover Panel Test Component
+      // =========================================================================
+
+      /**
+       * HoverPanelTriggers - Component with buttons to demonstrate hover panel
+       */
+      function HoverPanelTriggers() {
+        const hoverPanel = useHoverPanel()
+
+        return html`
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <${Button}
+              variant="medium-text"
+              color="primary"
+              onMouseEnter=${(e) => hoverPanel.show('This is a simple tooltip text!', e)}
+              onMouseMove=${(e) => hoverPanel.follow(e)}
+              onMouseLeave=${() => hoverPanel.hide()}
+            >
+              Hover for Tooltip
+            <//>
+
+            <${Button}
+              variant="medium-text"
+              color="secondary"
+              onMouseEnter=${(e) =>
+                hoverPanel.show(
+                  html`
+                    <strong>Rich Content</strong>
+                    <p style="margin: 8px 0 0 0;">
+                      This panel supports <em>HTML content</em> including styled
+                      elements.
+                    </p>
+                  `,
+                  e,
+                )}
+              onMouseMove=${(e) => hoverPanel.follow(e)}
+              onMouseLeave=${() => hoverPanel.hide()}
+            >
+              Hover for Rich Content
+            <//>
+
+            <${Button}
+              variant="medium-text"
+              color="success"
+              onMouseEnter=${(e) =>
+                hoverPanel.show(
+                  html`
+                    <div>
+                      <strong>Tag: 1girl</strong>
+                      <p style="margin: 8px 0 0 0;">
+                        An image depicting one female character. Dolls only
+                        count if they act on their own.
+                      </p>
+                    </div>
+                  `,
+                  e,
+                )}
+              onMouseMove=${(e) => hoverPanel.follow(e)}
+              onMouseLeave=${() => hoverPanel.hide()}
+            >
+              Hover for Tag Definition
+            <//>
+
+            <${Button}
+              variant="medium-text"
+              color="danger"
+              onClick=${(e) => {
+                // Programmatic show at click position
+                hoverPanel.show(
+                  'Programmatic panel! Will auto-hide on mouse leave.',
+                  e,
+                )
+              }}
+              onMouseLeave=${() => hoverPanel.hide()}
+            >
+              Programmatic Show
+            <//>
+          </div>
+        `
+      }
+
+      // =========================================================================
+      // Progress Banner Test Component
+      // =========================================================================
+
+      /**
+       * ProgressTriggers - Component with buttons to trigger progress simulations
+       */
+      function ProgressTriggers({ mockSSEManager }) {
+        const progress = useProgress()
+
+        const handleSimulateProgress = () => {
+          const taskId = 'test-task-' + Date.now()
+          progress.show(taskId, {
+            onComplete: (data) => console.log('Progress complete!', data),
+            onError: (data) => console.error('Progress error!', data),
+            defaultTitle: 'Component Test Page',
+          })
+
+          // Delay simulation to allow component to subscribe first
+          setTimeout(() => {
+            mockSSEManager.simulateProgress(taskId)
+          }, 100)
+        }
+
+        const handleSimulateError = () => {
+          const taskId = 'test-task-error-' + Date.now()
+          progress.show(taskId, {
+            onComplete: (data) => console.log('Progress complete!', data),
+            onError: (data) => console.error('Progress error!', data),
+            defaultTitle: 'Component Test Page',
+          })
+
+          // Delay simulation to allow component to subscribe first
+          setTimeout(() => {
+            mockSSEManager.simulateError(taskId)
+          }, 100)
+        }
+
+        return html`
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <${Button} 
+            variant="medium-text"
+            color="primary"
+            onClick=${handleSimulateProgress}
+          >
+            Simulate Progress
+          </>
+          <${Button} 
+            variant="medium-text"
+            color="danger"
+            onClick=${handleSimulateError}
+          >
+            Simulate Error
+          </>
+        </div>
+      `
+      }
+
+      // =========================================================================
+      // GlobalBgmPlayer Demo Component
+      // =========================================================================
+
+      const CROSSFADE_DURATION = 3
+
+      const DEMO_PLAYLIST = [
+        '/js/custom-ui/demo/sample-music-track-1.mp3',
+        '/js/custom-ui/demo/sample-music-track-2.mp3',
+        '/js/custom-ui/demo/sample-music-track-3.mp3',
+        '/js/custom-ui/demo/sample-music-track-4.mp3',
+      ]
+
+      function BgmPlayerDemo() {
+        const [playing, setPlaying] = useState(false)
+        const [track, setTrack] = useState(null)
+        const [currentTime, setCurrentTime] = useState(0)
+        const [duration, setDuration] = useState(0)
+        const timeUpdateHandlerRef = useRef(null)
+        const prevAudioRef = useRef(null)
+
+        // Subscribe to player events
+        useEffect(() => {
+          return globalBgmPlayer.subscribe((e) => {
+            if (e.event === 'track-start') {
+              setTrack(e)
+              setDuration(globalBgmPlayer.getDuration())
+              setCurrentTime(0)
+            }
+            if (e.event === 'stop') {
+              setPlaying(false)
+              setTrack(null)
+              setCurrentTime(0)
+              setDuration(0)
+            }
+          })
+        }, [])
+
+        // Attach timeupdate listener to the current audio element when track changes
+        useEffect(() => {
+          if (!playing) return
+          const update = () => {
+            setCurrentTime(globalBgmPlayer.getCurrentTime())
+            setDuration(globalBgmPlayer.getDuration())
+          }
+          const attachToCurrentAudio = () => {
+            const audio = globalBgmPlayer.getCurrentAudioElement()
+            if (!audio) return
+            if (prevAudioRef.current && prevAudioRef.current !== audio) {
+              prevAudioRef.current.removeEventListener(
+                'timeupdate',
+                timeUpdateHandlerRef.current,
+              )
+            }
+            timeUpdateHandlerRef.current = update
+            prevAudioRef.current = audio
+            audio.addEventListener('timeupdate', update)
+          }
+          attachToCurrentAudio()
+          return () => {
+            if (prevAudioRef.current && timeUpdateHandlerRef.current) {
+              prevAudioRef.current.removeEventListener(
+                'timeupdate',
+                timeUpdateHandlerRef.current,
+              )
+            }
+          }
+        }, [playing, track])
+
+        const handlePlay = () => {
+          if (globalBgmPlayer.isPlaying()) {
+            globalBgmPlayer.stop()
+            setPlaying(false)
+          } else {
+            globalBgmPlayer.setPlaylist(DEMO_PLAYLIST)
+            globalBgmPlayer.setTransition({
+              mode: 'crossfade',
+              durationSeconds: CROSSFADE_DURATION,
+            })
+            globalBgmPlayer.play()
+            setPlaying(true)
+          }
+        }
+
+        const formatTime = (s) => {
+          if (!isFinite(s) || s < 0) return '0:00'
+          const m = Math.floor(s / 60)
+          const sec = Math.floor(s % 60)
+          return m + ':' + String(sec).padStart(2, '0')
+        }
+
+        const progress =
+          duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0
+        const theme = currentTheme.value
+
+        return html`
+        <div style="display: flex; flex-direction: column; gap: 8px; width: 340px;">
+
+          <!-- Status / track info row -->
+          <div style="font-size: 13px; color: ${theme.colors.text.secondary}; min-height: 18px;">
+            ${
+              track
+                ? html`<span
+                    ><strong>${track.label}</strong> · ${track.index + 1} /
+                    ${track.total}</span
+                  >`
+                : 'Ready · 4 local tracks'
+            }
+          </div>
+
+          <!-- Panel: play button + progress bar + times -->
+          <${Panel} variant="glass" padding="small" style=${{ display: 'flex', alignItems: 'center', gap: theme.spacing.small.gap }}>
+            <${Button}
+              variant="medium-icon"
+              color="secondary"
+              icon=${playing ? 'stop' : 'play'}
+              disabled=${false}
+              onClick=${handlePlay}
+              title=${playing ? 'Stop' : 'Play'}
+            />
+
+            <!-- Progress bar -->
+            <div style="flex: 1; display: flex; align-items: center; gap: 6px;">
+              <span style="font-family: monospace; font-size: ${theme.typography.fontSize.small}; color: ${theme.colors.text.secondary}; min-width: 36px; text-align: center;">
+                ${formatTime(currentTime)}
+              </span>
+              <div style="
+                flex: 1; height: 6px; border-radius: 3px; overflow: hidden;
+                background: ${theme.colors.overlay.background};
+              ">
+                <div style="
+                  height: 100%; border-radius: 3px;
+                  width: ${progress}%;
+                  background: ${theme.colors.primary.background};
+                  transition: width 0.1s linear;
+                "></div>
+              </div>
+              <span style="font-family: monospace; font-size: ${theme.typography.fontSize.small}; color: ${theme.colors.text.secondary}; min-width: 36px; text-align: center;">
+                ${formatTime(duration)}
+              </span>
+            </div>
+          </${Panel}>
+
+          <div style="font-size: 11px; opacity: 0.45;">
+            Crossfade ${CROSSFADE_DURATION} s · loops playlist · backed by HTMLAudioElement + Web Audio gain
+          </div>
+        </div>
+      `
+      }
+
+      // =========================================================================
+      // VideoPlayer Demo
+      // =========================================================================
+
+      function VideoPlayerDemo() {
+        const viewerRef = useRef(null)
+        const videoElemRef = useRef(null)
+        const VIDEO_URL = '/js/custom-ui/demo/sample-video-loop.webm'
+
+        useEffect(() => {
+          if (!viewerRef.current) return
+          viewerRef.current.transitionTo(html`
+            <video
+              ref=${(el) => {
+                videoElemRef.current = el
+              }}
+              src=${VIDEO_URL}
+              style=${{ maxWidth: '300px', maxHeight: '225px', display: 'block', borderRadius: '8px' }}
+            />
+          `)
+        }, [])
+
+        return html`
+          <div
+            style=${{ display: 'flex', flexDirection: 'column', gap: '8px', width: '320px' }}
+          >
+            <${TransitionViewer}
+              ref=${viewerRef}
+              style=${{ width: '320px', height: '240px', borderRadius: '8px', background: '#111' }}
+            />
+            <${VideoPlayer} videoRef=${videoElemRef} videoUrl=${VIDEO_URL} />
+          </div>
+        `
+      }
+
+      // =========================================================================
+      // =========================================================================
+      // TransitionViewer Demo
+      // =========================================================================
+
+      const DEMO_COLORS = [
+        '#e74c3c',
+        '#3498db',
+        '#2ecc71',
+        '#f39c12',
+        '#9b59b6',
+      ]
+      const DEMO_LABELS = ['Red', 'Blue', 'Green', 'Orange', 'Purple']
+
+      function TransitionViewerDemo() {
+        const viewerRef = useRef(null)
+        const [index, setIndex] = useState(0)
+        const [transitionMs, setTransitionMs] = useState(400)
+        const isFirst = useRef(true)
+
+        useEffect(() => {
+          if (!viewerRef.current) return
+          const color = DEMO_COLORS[index]
+          const label = DEMO_LABELS[index]
+          const el = html`
+            <div
+              style=${{
+                width: '200px',
+                height: '120px',
+                background: color,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '8px',
+                color: '#fff',
+                fontWeight: 'bold',
+                fontSize: '18px',
+              }}
+            >
+              ${label}
+            </div>
+          `
+          if (isFirst.current) {
+            viewerRef.current.transitionTo(el)
+            isFirst.current = false
+          } else {
+            viewerRef.current.transitionTo(el)
+          }
+        }, [index])
+
+        return html`
+        <div style=${{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-start' }}>
+          <${TransitionViewer}
+            ref=${viewerRef}
+            transitionMs=${transitionMs}
+            style=${{ width: '200px', height: '120px', borderRadius: '8px', background: '#111' }}
+          />
+          <div style=${{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <${Button} variant="medium-text" onClick=${() => setIndex((i) => (i + 1) % DEMO_COLORS.length)}>
+              Next color
+            </${Button}>
+            <${Select}
+              value=${transitionMs}
+              onChange=${(e) => setTransitionMs(Number(e.target.value))}
+              options=${[
+                { label: 'fast (150ms)', value: 150 },
+                { label: 'normal (250ms)', value: 250 },
+                { label: 'slow (400ms)', value: 400 },
+                { label: 'verySlow (600ms)', value: 600 },
+                { label: 'debug (3000ms)', value: 3000 },
+              ]}
+              widthScale="normal"
+              heightScale="compact"
+            />
+          </div>
+          <p style=${{ margin: 0, opacity: 0.6, fontSize: '13px' }}>
+            Current: ${DEMO_LABELS[index]} — click "Next color" to fade to the next
+          </p>
+        </div>
+      `
+      }
+
+      // ── Pill demo ─────────────────────────────────────────────────────────────
+
+      function PillDemo() {
+        const [iconState, setIconState] = useState('play')
+        const [templateVal, setTemplateVal] = useState(
+          'normal {{outer upper body}}',
+        )
+        const [multiTemplate, setMultiTemplate] = useState(
+          'before {{head}} after',
+        )
+        const [outlinedTemplate, setOutlinedTemplate] = useState(
+          'normal {{outer upper body}}',
+        )
+        const SLOT_TYPES = [
+          'outer upper body',
+          'inner upper body',
+          'head',
+          'face',
+          'accessories',
+        ]
+
+        return html`
+        <div style=${{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+
+          <div>
+            <p style=${{ margin: '0 0 8px', fontWeight: 600 }}>Static — all colors</p>
+            <div style=${{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              ${['primary', 'secondary', 'warning', 'success', 'danger'].map(
+                (c) => html`
+                <${Pill} key=${c} color=${c}>${c}</${Pill}>
+              `,
+              )}
+            </div>
+          </div>
+
+          <div>
+            <p style=${{ margin: '0 0 8px', fontWeight: 600 }}>Dismiss (× on left)</p>
+            <div style=${{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              ${['primary', 'secondary', 'warning', 'success', 'danger'].map(
+                (c) => html`
+                <${Pill} key=${c} color=${c} onDismiss=${() => alert('dismiss ' + c)}>${c}</${Pill}>
+              `,
+              )}
+            </div>
+          </div>
+
+          <div>
+            <p style=${{ margin: '0 0 8px', fontWeight: 600 }}>Interactive icon — click toggles play/stop</p>
+            <div style=${{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <${Pill} color="primary" icon=${iconState} iconSide="right" onIconClick=${() => setIconState((s) => (s === 'play' ? 'stop' : 'play'))}>
+                Background Music
+              </${Pill}>
+              <${Pill} color="secondary" icon="edit" onIconClick=${() => alert('edit')} iconSide="left">
+                Editable Tag
+              </${Pill}>
+              <${Pill} color="success" icon="check" iconColor="#ffff00" onIconClick=${() => {}}>
+                Custom Icon Color
+              </${Pill}>
+            </div>
+          </div>
+
+          <div>
+            <p style=${{ margin: '0 0 8px', fontWeight: 600 }}>Template toggle — click slot to cycle</p>
+            <div style=${{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+              <${Pill}
+                color="primary"
+                options=${SLOT_TYPES}
+                onTemplateChange=${setTemplateVal}
+                onDismiss=${() => setTemplateVal('{{outer upper body}}')}
+              >${templateVal}</${Pill}>
+              <${Pill}
+                color="warning"
+                options=${SLOT_TYPES}
+                onTemplateChange=${setMultiTemplate}
+              >${multiTemplate}</${Pill}>
+              <${Pill} color="secondary" options=${[]}>
+                {'{{no options — static highlight}}'}
+              </${Pill}>
+            </div>
+            <pre style=${{ marginTop: '8px', fontSize: '12px', opacity: 0.7 }}>
+template: ${templateVal}
+multi:    ${multiTemplate}</pre>
+          </div>
+
+          <div>
+            <p style=${{ margin: '0 0 8px', fontWeight: 600 }}>Disabled</p>
+            <div style=${{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <${Pill} color="primary" disabled=${true} onDismiss=${() => {}}>primary</${Pill}>
+              <${Pill} color="success" disabled=${true} icon="play" onIconClick=${() => {}}>success</${Pill}>
+              <${Pill} color="warning" disabled=${true} options=${SLOT_TYPES} onTemplateChange=${() => {}}>
+                {'{{head}}'}
+              </${Pill}>
+            </div>
+          </div>
+
+          <div>
+            <p style=${{ margin: '0 0 8px', fontWeight: 600 }}>Outlined — transparent bg, neutral border, primary text</p>
+            <div style=${{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <${Pill} variant="outlined">static</${Pill}>
+              <${Pill} variant="outlined" onDismiss=${() => {}}>dismiss</${Pill}>
+              <${Pill} variant="outlined" icon="info-circle" onIconClick=${() => alert('icon')}>with icon</${Pill}>
+              <${Pill} variant="outlined" onClick=${(v) => alert('clicked: ' + v)}>clickable (hover bg)</${Pill}>
+              <${Pill} variant="outlined" onDismiss=${() => {}} onClick=${(v) => alert('body: ' + v)}>dismiss + click</${Pill}>
+              <${Pill} variant="outlined" disabled=${true} onDismiss=${() => {}}>disabled</${Pill}>
+            </div>
+          </div>
+
+          <div>
+            <p style=${{ margin: '0 0 8px', fontWeight: 600 }}>Outlined + template toggle — shell is neutral, slot tokens show the assigned color</p>
+            <div style=${{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+              ${['primary', 'secondary', 'warning', 'success', 'danger'].map(
+                (c) => html`
+                <${Pill}
+                  key=${c}
+                  variant="outlined"
+                  color=${c}
+                  options=${SLOT_TYPES}
+                  onTemplateChange=${setOutlinedTemplate}
+                  onDismiss=${() => setOutlinedTemplate('normal {{outer upper body}}')}
+                >${outlinedTemplate}</${Pill}>
+              `,
+              )}
+            </div>
+            <pre style=${{ marginTop: '8px', fontSize: '12px', opacity: 0.7 }}>outlined template: ${outlinedTemplate}</pre>
+          </div>
+
+          <div>
+            <p style=${{ margin: '0 0 8px', fontWeight: 600 }}>Clickable body — hover brightens; onClick fires with value</p>
+            <div style=${{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <${Pill} color="primary" onClick=${(v) => alert('clicked: ' + v)}>click me</${Pill}>
+              <${Pill} color="secondary" value="custom-value" onClick=${(v) => alert('value: ' + v)}>explicit value</${Pill}>
+              <${Pill} color="success" onDismiss=${() => {}} onClick=${(v) => alert('body: ' + v)}>dismiss + click</${Pill}>
+              <${Pill} color="warning" icon="info-circle" iconSide="right" onIconClick=${() => alert('icon')} onClick=${(v) => alert('body: ' + v)}>icon + click</${Pill}>
+              <${Pill} color="danger" disabled=${true} onClick=${(v) => alert('should not fire')}>disabled (no hover)</${Pill}>
+            </div>
+          </div>
+
+        </div>
+      `
+      }
+
+      // ── AutocompleteDropdown + useAutocomplete demo ───────────────────────────
+
+      function AutocompleteDemo() {
+        const anchorRef = { current: null }
+        const FRUITS = [
+          'apple',
+          'apricot',
+          'banana',
+          'blueberry',
+          'cherry',
+          'grape',
+          'mango',
+          'melon',
+          'orange',
+          'peach',
+          'pear',
+          'plum',
+          'strawberry',
+        ]
+        const [confirmed, setConfirmed] = useState('')
+        const {
+          dropdownState,
+          showDropdownRef,
+          closeDropdownRef,
+          handleDropdownKeyDownRef,
+          handleDropdownClick,
+        } = useAutocomplete({
+          suggestions: FRUITS,
+          getAnchorRect: () =>
+            anchorRef.current?.getBoundingClientRect() ?? null,
+          onConfirm: (item) => {
+            setConfirmed(item)
+            closeDropdownRef.current()
+          },
+          showEmptyOnNoResults: false,
+        })
+
+        return html`
+          <div
+            style=${{ display: 'flex', flexDirection: 'column', gap: '8px', maxWidth: '320px' }}
+          >
+            <input
+              ref=${anchorRef}
+              placeholder="Type a fruit…"
+              style=${{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #555', background: '#222', color: '#eee', fontSize: '14px' }}
+              onInput=${(e) => showDropdownRef.current(e.target.value)}
+              onKeyDown=${(e) => handleDropdownKeyDownRef.current(e)}
+              onBlur=${() => closeDropdownRef.current()}
+            />
+            <${AutocompleteDropdown}
+              dropdownState=${dropdownState}
+              onItemClick=${handleDropdownClick}
+            />
+            ${confirmed ? html`<div style=${{ color: '#aaa', fontSize: '13px' }}>Confirmed: <strong>${confirmed}</strong></div>` : null}
+          </div>
+        `
+      }
+
+      // ── ContentEditablePillInput demo ─────────────────────────────────────────
+
+      function ContentEditablePillInputDemo() {
+        const [values, setValues] = useState(['blue_eyes', 'long hair'])
+        const [multiValues, setMultiValues] = useState([
+          'apple',
+          '\n',
+          'cherry',
+        ])
+
+        return html`
+          <div
+            style=${{ display: 'flex', flexDirection: 'column', gap: '24px' }}
+          >
+            <div>
+              <p style=${{ margin: '0 0 8px', fontWeight: 600 }}>
+                Basic (single-line suggestions)
+              </p>
+              <${ContentEditablePillInput}
+                label="Tags"
+                values=${values}
+                onValuesChange=${setValues}
+                suggestions=${['blue_eyes', 'red_eyes', 'long hair', 'short hair', 'white shirt', 'black shirt', 'smile', 'looking at viewer']}
+                placeholder="Type to add tags..."
+              />
+              <pre
+                style=${{ marginTop: '8px', fontSize: '12px', opacity: 0.7 }}
+              >
+values: ${JSON.stringify(values)}</pre>
+            </div>
+
+            <div>
+              <p style=${{ margin: '0 0 8px', fontWeight: 600 }}>
+                Multiline (Enter = line break, each line renders as new row)
+              </p>
+              <${ContentEditablePillInput}
+                label="Multiline Tags"
+                values=${multiValues}
+                onValuesChange=${setMultiValues}
+                suggestions=${['apple', 'banana', 'cherry', 'date', 'elderberry', 'fig', 'grape']}
+                placeholder="Type tags, press Enter for new line..."
+                multiline=${true}
+                fixedHeight=${120}
+              />
+              <pre
+                style=${{ marginTop: '8px', fontSize: '12px', opacity: 0.7 }}
+              >
+values: ${JSON.stringify(multiValues)}</pre>
+            </div>
+
+            <div>
+              <p style=${{ margin: '0 0 8px', fontWeight: 600 }}>Disabled</p>
+              <${ContentEditablePillInput}
+                label="Disabled"
+                values=${['tag1', 'tag2']}
+                onValuesChange=${() => {}}
+                suggestions=${['tag1', 'tag2']}
+                disabled=${true}
+              />
+            </div>
+
+            <div>
+              <p style=${{ margin: '0 0 8px', fontWeight: 600 }}>
+                Clickable pills — hover brightens, click fires onPillClick
+              </p>
+              <${ContentEditablePillInput}
+                label="Clickable pills"
+                values=${values}
+                onValuesChange=${setValues}
+                suggestions=${['blue_eyes', 'red_eyes', 'long hair', 'short hair']}
+                placeholder="Type tags..."
+                onPillClick=${(v) => alert('pill clicked: ' + v)}
+              />
+            </div>
+
+            <div>
+              <p style=${{ margin: '0 0 8px', fontWeight: 600 }}>
+                Clickable pills + icon button overlay
+              </p>
+              <${ContentEditablePillInput}
+                label="Tags with button"
+                values=${values}
+                onValuesChange=${setValues}
+                suggestions=${['blue_eyes', 'red_eyes', 'long hair', 'short hair']}
+                placeholder="Type tags..."
+                onPillClick=${(v) => alert('pill clicked: ' + v)}
+                buttonProps=${{ icon: 'search', title: 'Browse', onClick: () => alert('button clicked') }}
+              />
+              <p style=${{ margin: '16px 0 8px', fontWeight: 600 }}>
+                Pill tooltips — hover a pill to see its definition
+              </p>
+              <${ContentEditablePillInput}
+                label="Tags with tooltips"
+                values=${['blue_eyes', 'long hair']}
+                onValuesChange=${() => {}}
+                suggestions=${['blue_eyes', 'red_eyes', 'long hair', 'short hair']}
+                placeholder="Type tags..."
+                getPillTooltip=${(v) => {
+                  const defs = {
+                    blue_eyes: 'Character has blue-coloured irises',
+                    long_hair: 'Hair extending past the shoulders',
+                    'long hair': 'Hair extending past the shoulders',
+                    red_eyes: 'Character has red-coloured irises',
+                  }
+                  return defs[v] ?? null
+                }}
+              />
+            </div>
+          </div>
+        `
+      }
+
+      // =========================================================================
+      // IconMap Demo Component
+      // =========================================================================
+
+      function IconMapDemo() {
+        const theme = currentTheme.value
+        return html`
+          <div
+            style=${{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+              gap: '12px',
+            }}
+          >
+            ${Object.entries(ICON_MAP).map(
+              ([key, value]) => html`
+                <div
+                  key=${key}
+                  style=${{
+                    background: theme.colors.background.secondary,
+                    border: '1px solid ' + theme.colors.border.primary,
+                    borderRadius: theme.spacing.medium.borderRadius,
+                    padding: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <div
+                    style=${{ height: '48px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <${Icon}
+                      name=${key}
+                      size="36px"
+                      color=${theme.colors.primary.background}
+                    />
+                  </div>
+                  <div
+                    style=${{ fontFamily: 'monospace', fontSize: '13px', fontWeight: '600', color: theme.colors.text.primary, wordBreak: 'break-all' }}
+                  >
+                    ${value}
+                  </div>
+                  <div
+                    style=${{ fontFamily: 'monospace', fontSize: '11px', color: theme.colors.text.secondary }}
+                  >
+                    key: ${key}
+                  </div>
+                  <div
+                    style=${{
+                      borderTop: '1px dashed ' + theme.colors.border.primary,
+                      paddingTop: '8px',
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <box-icon
+                      name=${key}
+                      size="14px"
+                      color=${theme.colors.text.muted}
+                    ></box-icon>
+                  </div>
+                </div>
+              `,
+            )}
+          </div>
+        `
+      }
+
+      // Test Application
+      // =========================================================================
+
+      /**
+       * TestApp - Main test page application component
+       * Displays all custom UI components with various states for testing
+       */
+      class TestApp extends Component {
+        constructor(props) {
+          super(props)
+          this.state = {
+            themeName: currentTheme.value.name,
+            // Checkbox states
+            checkbox1: false,
+            checkbox2: true,
+            checkbox3: true,
+            // ButtonGroup states
+            selectedTags: ['tag2'],
+            // Pagination state
+            paginationPage: 0,
+            // Item navigation state (for useItemNavigation demo)
+            itemNavItems: [
+              { id: '1', name: 'Image 1', url: '/img1.jpg' },
+              { id: '2', name: 'Image 2', url: '/img2.jpg' },
+              { id: '3', name: 'Image 3', url: '/img3.jpg' },
+              { id: '4', name: 'Image 4', url: '/img4.jpg' },
+              { id: '5', name: 'Image 5', url: '/img5.jpg' },
+            ],
+            itemNavSelected: null,
+            // ImageSelect states
+            imageSelectValue1: null,
+            imageSelectValue2: '/js/custom-ui/demo/sample-album-cover-1.jpg',
+            // AudioSelect states
+            audioSelectValue1: null,
+            audioSelectValue2: {
+              audioUrl: '/js/custom-ui/demo/sample-music-track-1.mp3',
+              name: 'Sample Track 1',
+              imageUrl: '/js/custom-ui/demo/sample-album-cover-1.jpg',
+            },
+            // ProgressBanner states
+            progressBannerVisible: false,
+            progressBannerKey: 0,
+            // Modal states
+            modalOpen: false,
+            modalSize: 'medium',
+            // Slider states
+            sliderGain: 0.5,
+            sliderPan: 0,
+            // RangeSlider states
+            rangeDefault: { min: 0, max: 100 },
+            rangeSnap: { min: 2, max: 7.5 },
+            rangeNarrow: { min: 25, max: 50 },
+            // DiscreteSlider state
+            discreteValue: 'medium',
+            // ToggleSwitch states
+            toggle1: false,
+            toggle2: true,
+            toggle3Disabled: false,
+            // MultiSelect states
+            multiSelectKeys: ['C major', 'A minor'],
+            multiSelectSig: [],
+            // Tabs states
+            activeTab: 'tab1',
+            activeTabVariant: 'tab1',
+            activeTabSize: 'tab1',
+            // FloatingPanel states
+            floatingPanelOpen: false,
+            floatingPanelPosition: 'center',
+            floatingPanelVariant: 'elevated',
+            // DynamicList states
+            dynamicListItems: [
+              {
+                id: 1,
+                title: 'First Item',
+                description: 'Description for first item',
+              },
+              {
+                id: 2,
+                title: 'Second Item',
+                description: 'Description for second item',
+              },
+              {
+                id: 3,
+                title: 'Third Item',
+                description: 'Description for third item',
+              },
+            ],
+            condensedListItems: ['Apple', 'Banana', 'Cherry', 'Date'],
+            // SearchSelectModal states
+            searchSelectSingleOpen: false,
+            searchSelectMultiOpen: false,
+            searchSelectSingleResult: null,
+            searchSelectMultiResult: [],
+            searchSelectActionResult: null,
+          }
+
+          // Mock SSE manager for testing ProgressBanner
+          this.mockSSEManager = {
+            subscribers: {},
+            subscribe(taskId, handlers) {
+              this.subscribers[taskId] = handlers
+            },
+            unsubscribe(taskId) {
+              delete this.subscribers[taskId]
+            },
+            // Simulate progress updates with realistic step changes
+            simulateProgress(taskId) {
+              const handlers = this.subscribers[taskId]
+              if (!handlers) return
+
+              // Define realistic steps with progress ranges
+              const steps = [
+                {
+                  range: [0, 15],
+                  name: 'Loading model...',
+                  node: 'CheckpointLoaderSimple',
+                },
+                {
+                  range: [15, 25],
+                  name: 'Loading LoRA...',
+                  node: 'LoraLoaderModelOnly',
+                },
+                {
+                  range: [25, 35],
+                  name: 'Encoding prompt...',
+                  node: 'CLIPTextEncode',
+                },
+                {
+                  range: [35, 40],
+                  name: 'Preparing canvas...',
+                  node: 'EmptyLatentImage',
+                },
+                {
+                  range: [40, 85],
+                  name: 'Sampling image...',
+                  node: 'KSampler',
+                },
+                {
+                  range: [85, 95],
+                  name: 'Decoding image...',
+                  node: 'VAEDecode',
+                },
+                {
+                  range: [95, 100],
+                  name: 'Saving image...',
+                  node: 'SaveImage',
+                },
+              ]
+
+              let progress = 0
+              let stepIndex = 0
+
+              const interval = setInterval(() => {
+                progress += 2 // Increment by 2% for smoother animation
+
+                // Find current step
+                while (
+                  stepIndex < steps.length - 1 &&
+                  progress > steps[stepIndex].range[1]
+                ) {
+                  stepIndex++
+                }
+
+                const currentStep = steps[stepIndex]
+
+                if (progress <= 100) {
+                  handlers.onProgress?.({
+                    progress: {
+                      percentage: progress,
+                      currentValue: progress,
+                      maxValue: 100,
+                      currentStep: currentStep.name,
+                      node: currentStep.node,
+                    },
+                  })
+                }
+
+                if (progress >= 100) {
+                  clearInterval(interval)
+                  handlers.onComplete?.({
+                    progress: { maxValue: 100 },
+                  })
+                }
+              }, 200) // Faster updates for smoother animation
+            },
+            // Simulate error
+            simulateError(taskId) {
+              const handlers = this.subscribers[taskId]
+              if (!handlers) return
+
+              setTimeout(() => {
+                handlers.onError?.({
+                  error: { message: 'Simulated generation error' },
+                })
+              }, 1000)
+            },
+          }
+        }
+
+        componentDidMount() {
+          // Subscribe to theme changes
+          this.unsubscribe = currentTheme.subscribe((theme) => {
+            this.setState({ themeName: theme.name })
+          })
+        }
+
+        componentWillUnmount() {
+          if (this.unsubscribe) {
+            this.unsubscribe()
+          }
+        }
+
+        handleToggleTheme = () => {
+          toggleTheme()
+        }
+
+        handleCheckbox = (key) => () => {
+          this.setState((prev) => ({ [key]: !prev[key] }))
+        }
+
+        handleTagSelect = (id) => {
+          this.setState((prev) => ({
+            selectedTags: prev.selectedTags.includes(id)
+              ? prev.selectedTags.filter((t) => t !== id)
+              : [...prev.selectedTags, id],
+          }))
+        }
+
+        handlePaginationPrev = () => {
+          this.setState((prev) => ({
+            paginationPage: Math.max(0, prev.paginationPage - 1),
+          }))
+        }
+
+        handlePaginationNext = () => {
+          this.setState((prev) => ({
+            paginationPage: Math.min(4, prev.paginationPage + 1),
+          }))
+        }
+
+        handleItemNavSelect = (item) => {
+          this.setState({ itemNavSelected: item })
+        }
+
+        handleImageChange1 = (value) => {
+          this.setState({ imageSelectValue1: value })
+        }
+
+        handleImageChange2 = (value) => {
+          this.setState({ imageSelectValue2: value })
+        }
+
+        handleAudioChange1 = (value) => {
+          this.setState({ audioSelectValue1: value })
+        }
+
+        handleAudioChange2 = (value) => {
+          this.setState({ audioSelectValue2: value })
+        }
+
+        handleSimulateProgress = () => {
+          // Moved to ProgressTriggers component
+        }
+
+        handleSimulateError = () => {
+          // Moved to ProgressTriggers component
+        }
+
+        render() {
+          const { themeName } = this.state
+
+          return html`
+          <${HoverPanelProvider}>
+            <${ToastProvider}>
+              <${ProgressProvider} sseManager=${this.mockSSEManager}>
+                <${Page}>
+                <${Container}>
+                  <${Header}>
+                    <${Title}>Custom UI Component Test Page<//>
+                    <${Button} 
+                      variant="medium-icon-text"
+                      color="primary" 
+                      icon=${themeName === 'dark' ? 'sun' : 'moon'}
+                      onClick=${this.handleToggleTheme}
+                    >
+                      ${themeName === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                    <//>
+                  <//>
+                  
+                  <${MutedText}>
+                    Current theme: <strong>${themeName}</strong>
+                  <//>
+                  
+                  <!-- Component Sections -->
+                  
+                  <${CategoryHeader}>Layout Components<//>
+                  
+                  <${Section}>
+                    <${SectionTitle}>Page Component<//>
+                    <p>The Page component provides global styles including:</p>
+                    <ul>
+                      <li>Font family (Arial, sans-serif)</li>
+                      <li>Background color from theme</li>
+                      <li>Text color from theme</li>
+                      <li>CSS reset / base styles</li>
+                      <li>Custom scrollbar styling</li>
+                    </ul>
+                  <//>
+                  
+                  <${Section}>
+                    <${SectionTitle}>Icon Component</${SectionTitle}>
+                    <p style="margin-bottom: 16px; opacity: 0.7;">All entries in ICON_MAP rendered via the Icon component. Each card shows the icon, its Material Symbol name, the map key, and the Boxicon fallback.</p>
+                    <${IconMapDemo} />
+                  </${Section}>
+                  
+                  <${Section}>
+                    <${SectionTitle}>Panel Component</${SectionTitle}>
+                    <p style="margin-bottom: 16px; opacity: 0.7;">Versatile container with variants and optional color theming</p>
+                    
+                    <h3 style="margin: 24px 0 12px; opacity: 0.8;">Variants (Default Colors)</h3>
+                    <${ComponentGrid}>
+                      <${Panel}>
+                        <strong>Default Panel</strong>
+                        <p>Solid background with subtle border.</p>
+                      <//>
+                      <${Panel} variant="elevated">
+                        <strong>Elevated Panel</strong>
+                        <p>Raised appearance with shadow.</p>
+                      <//>
+                      <${Panel} variant="outlined">
+                        <strong>Outlined Panel</strong>
+                        <p>Transparent background with border.</p>
+                      <//>
+                      <div style="position: relative; background: linear-gradient(45deg, #007bff, #28a745); padding: 20px; border-radius: 8px;">
+                        <${Panel} variant="glass">
+                          <strong>Glass Panel</strong>
+                          <p>Semi-transparent with blur effect.</p>
+                        <//>
+                      </div>
+                    </>
+                    
+                    <h3 style="margin: 24px 0 12px; opacity: 0.8;">Elevated Panels with Colors</h3>
+                    <${ComponentGrid}>
+                      <${Panel} variant="elevated" color="success">
+                        <strong>Success</strong>
+                        <p>Positive feedback or completed states.</p>
+                      <//>
+                      <${Panel} variant="elevated" color="danger">
+                        <strong>Danger</strong>
+                        <p>Errors or destructive actions.</p>
+                      <//>
+                      <${Panel} variant="elevated" color="primary">
+                        <strong>Primary</strong>
+                        <p>Primary brand color.</p>
+                      <//>
+                      <${Panel} variant="elevated" color="secondary">
+                        <strong>Secondary</strong>
+                        <p>Secondary brand color.</p>
+                      <//>
+                    </>
+                    
+                    <h3 style="margin: 24px 0 12px; opacity: 0.8;">Default Panels with Colors</h3>
+                    <${ComponentGrid}>
+                      <${Panel} color="success">
+                        <strong>Success Default</strong>
+                      <//>
+                      <${Panel} color="danger">
+                        <strong>Danger Default</strong>
+                      <//>
+                      <${Panel} color="primary">
+                        <strong>Primary Default</strong>
+                      <//>
+                      <${Panel} color="secondary">
+                        <strong>Secondary Default</strong>
+                      <//>
+                    </>
+                    
+                    <h3 style="margin: 24px 0 12px; opacity: 0.8;">Outlined Panels with Colors</h3>
+                    <${ComponentGrid}>
+                      <${Panel} variant="outlined" color="success">
+                        <strong>Success Outlined</strong>
+                      <//>
+                      <${Panel} variant="outlined" color="danger">
+                        <strong>Danger Outlined</strong>
+                      <//>
+                      <${Panel} variant="outlined" color="primary">
+                        <strong>Primary Outlined</strong>
+                      <//>
+                      <${Panel} variant="outlined" color="secondary">
+                        <strong>Secondary Outlined</strong>
+                      <//>
+                    </>
+                  </${Section}>
+                  
+                  <${Section}>
+                    <${SectionTitle}>DynamicList Component</${SectionTitle}>
+                    <p style="margin-bottom: 16px; opacity: 0.7;">Reusable list with add/delete/reorder operations</p>
+                    
+                    <h4 style="margin: 16px 0 8px;">Standard Mode (collapsible panels)</h4>
+                    <${DynamicList}
+                      title="Task List"
+                      items=${this.state.dynamicListItems}
+                      renderItem=${(item, index) => html`
+                        <div>
+                          <${Input}
+                            label="Title"
+                            value=${item.title}
+                            onChange=${(e) => {
+                              const newItems = [...this.state.dynamicListItems]
+                              newItems[index] = {
+                                ...item,
+                                title: e.target.value,
+                              }
+                              this.setState({ dynamicListItems: newItems })
+                            }}
+                          />
+                          <${Textarea}
+                            label="Description"
+                            value=${item.description}
+                            onChange=${(e) => {
+                              const newItems = [...this.state.dynamicListItems]
+                              newItems[index] = {
+                                ...item,
+                                description: e.target.value,
+                              }
+                              this.setState({ dynamicListItems: newItems })
+                            }}
+                            rows=${3}
+                          />
+                        </div>
+                      `}
+                      getTitle=${(item) => item.title || 'Untitled'}
+                      createItem=${() => ({ id: Date.now(), title: '', description: '' })}
+                      onChange=${(items) => this.setState({ dynamicListItems: items })}
+                      addLabel="Add Task"
+                    />
+                    
+                    <h4 style="margin: 32px 0 8px;">Condensed Mode (inline layout)</h4>
+                    <${DynamicList}
+                      title="Simple List"
+                      items=${this.state.condensedListItems}
+                      renderItem=${(item, index) => html`
+                        <${Input}
+                          value=${item}
+                          onChange=${(e) => {
+                            const newItems = [...this.state.condensedListItems]
+                            newItems[index] = e.target.value
+                            this.setState({ condensedListItems: newItems })
+                          }}
+                          placeholder="Enter item text"
+                        />
+                      `}
+                      createItem=${() => ''}
+                      onChange=${(items) => this.setState({ condensedListItems: items })}
+                      addLabel="Add Item"
+                      condensed=${true}
+                    />
+
+                    <h4 style="margin: 32px 0 8px;">getHeaderContent — Rich VNode Header</h4>
+                    <p style="margin-bottom: 8px; opacity: 0.7;">Each item header renders a bold name + a colored pill via <code>getHeaderContent</code> while <code>getTitle</code> still drives the drag-ghost label.</p>
+                    <${DynamicList}
+                      title="Rich Header List"
+                      items=${this.state.dynamicListItems}
+                      renderItem=${(item) => html`<div style="padding: 4px 0;">${item.description}</div>`}
+                      getTitle=${(item) => item.title || 'Untitled'}
+                      getHeaderContent=${(item) => html`
+                        <span style="display:flex;align-items:center;gap:6px;">
+                          <strong>${item.title || 'Untitled'}</strong>
+                          <span
+                            style="background:#6c63ff;color:#fff;border-radius:4px;padding:1px 6px;font-size:11px;"
+                            >task</span
+                          >
+                        </span>
+                      `}
+                      createItem=${() => ({ id: Date.now(), title: 'New task', description: '' })}
+                      onChange=${(items) => this.setState({ dynamicListItems: items })}
+                      addLabel="Add Task"
+                    />
+
+                    <h4 style="margin: 32px 0 8px;">canDrop — Pinned First Item</h4>
+                    <p style="margin-bottom: 8px; opacity: 0.7;">The first item cannot be moved (simulates a locked running queue item). Drag or use move-up on item 2 to verify it stops at position 1.</p>
+                    <${DynamicList}
+                      title="Pinned List"
+                      items=${this.state.dynamicListItems}
+                      renderItem=${(item) => html`<div style="padding: 4px 0;">${item.title || 'Untitled'}</div>`}
+                      getTitle=${(item) => item.title || 'Untitled'}
+                      createItem=${() => ({ id: Date.now(), title: 'New item', description: '' })}
+                      onChange=${(items) => this.setState({ dynamicListItems: items })}
+                      addLabel="Add Task"
+                      showMoveUpDownButtons=${true}
+                      showDragButton=${true}
+                      canDrop=${(from, to) => !(from === 0 || to === 0)}
+                    />
+                  </${Section}>
+                  
+                  <${CategoryHeader}>Input/Output Components<//>
+                  
+                  <${Section}>
+                    <${SectionTitle}>Button Component</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">All button variants with color themes</p>
+                
+                <h4 style="margin: 16px 0 8px;">Medium Text Buttons (default)</h4>
+                <${ComponentGrid}>
+                  <${Button} color="primary">Primary<//>
+                  <${Button} color="secondary">Secondary<//>
+                  <${Button} color="success">Success<//>
+                  <${Button} color="danger">Danger<//>
+                  <${Button} color="primary" disabled=${true}>Disabled<//>
+                  <${Button} color="primary" loading=${true}>Loading<//>
+                <//>
+                
+                <h4 style="margin: 16px 0 8px;">Medium Icon-Text Buttons</h4>
+                <${ComponentGrid}>
+                  <${Button} variant="medium-icon-text" icon="play" color="primary">Play<//>
+                  <${Button} variant="medium-icon-text" icon="save" color="success">Save<//>
+                  <${Button} variant="medium-icon-text" icon="trash" color="danger">Delete<//>
+                  <${Button} variant="medium-icon-text" icon="cog" color="secondary">Settings<//>
+                <//>
+                
+                <h4 style="margin: 16px 0 8px;">Medium Icon-Only Buttons</h4>
+                <${ComponentGrid}>
+                  <${Button} variant="medium-icon" icon="play" color="primary" title="Play" />
+                  <${Button} variant="medium-icon" icon="pause" color="secondary" title="Pause" />
+                  <${Button} variant="medium-icon" icon="check" color="success" title="Confirm" />
+                  <${Button} variant="medium-icon" icon="x" color="danger" title="Close" />
+                <//>
+                
+                <h4 style="margin: 16px 0 8px;">Small Text Buttons (tag-style)</h4>
+                <${ComponentGrid}>
+                  <${Button} variant="small-text" color="primary">Tag Primary<//>
+                  <${Button} variant="small-text" color="secondary">Tag Secondary<//>
+                  <${Button} variant="small-text" color="success">Tag Success<//>
+                  <${Button} variant="small-text" color="danger">Tag Danger<//>
+                <//>
+                
+                <h4 style="margin: 16px 0 8px;">Small Icon-Only Buttons</h4>
+                <${ComponentGrid}>
+                  <${Button} variant="small-icon" icon="copy" color="secondary" title="Copy" />
+                  <${Button} variant="small-icon" icon="edit" color="primary" title="Edit" />
+                  <${Button} variant="small-icon" icon="refresh" color="success" title="Refresh" />
+                  <${Button} variant="small-icon" icon="trash" color="danger" title="Delete" />
+                <//>
+                
+                <h4 style="margin: 16px 0 8px;">Transparent Buttons (for tabs/overlays)</h4>
+                <${ComponentGrid}>
+                  <${Button} color="transparent">Transparent Text<//>
+                  <${Button} variant="medium-icon-text" icon="cog" color="transparent">With Icon<//>
+                  <${Button} variant="small-text" color="transparent">Small Transparent<//>
+                <//>
+
+                <h4 style="margin: 16px 0 8px;">heightScale override (null: variant height | normal: 44px | compact: 34px)</h4>
+                <${ComponentGrid}>
+                  <${Button} color="primary">Default (medium-text)<//>
+                  <${Button} color="primary" heightScale="normal">heightScale="normal"<//>
+                  <${Button} color="primary" heightScale="compact">heightScale="compact"<//>
+                  <${Button} variant="small-text" color="secondary" heightScale="normal">small-text + normal<//>
+                <//>
+              <//>
+              
+              <${Section}>
+                <${SectionTitle}>Panel Component</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Versatile container with variants and optional color theming</p>
+                
+                <h3 style="margin: 24px 0 12px; opacity: 0.8;">Variants (Default Colors)</h3>
+                <${ComponentGrid}>
+                  <${Panel}>
+                    <strong>Default Panel</strong>
+                    <p>Solid background with subtle border.</p>
+                  <//>
+                  <${Panel} variant="elevated">
+                    <strong>Elevated Panel</strong>
+                    <p>Raised appearance with shadow.</p>
+                  <//>
+                  <${Panel} variant="outlined">
+                    <strong>Outlined Panel</strong>
+                    <p>Transparent background with border.</p>
+                  <//>
+                  <div style="position: relative; background: linear-gradient(45deg, #007bff, #28a745); padding: 20px; border-radius: 8px;">
+                    <${Panel} variant="glass">
+                      <strong>Glass Panel</strong>
+                      <p>Semi-transparent with blur effect.</p>
+                    <//>
+                  </div>
+                </>
+                
+                <h3 style="margin: 24px 0 12px; opacity: 0.8;">Elevated Panels with Colors</h3>
+                <${ComponentGrid}>
+                  <${Panel} variant="elevated" color="success">
+                    <strong>Success</strong>
+                    <p>Positive feedback or completed states.</p>
+                  <//>
+                  <${Panel} variant="elevated" color="danger">
+                    <strong>Danger</strong>
+                    <p>Errors or destructive actions.</p>
+                  <//>
+                  <${Panel} variant="elevated" color="primary">
+                    <strong>Primary</strong>
+                    <p>Primary brand color.</p>
+                  <//>
+                  <${Panel} variant="elevated" color="secondary">
+                    <strong>Secondary</strong>
+                    <p>Secondary brand color.</p>
+                  <//>
+                </>
+                
+                <h3 style="margin: 24px 0 12px; opacity: 0.8;">Default Panels with Colors</h3>
+                <${ComponentGrid}>
+                  <${Panel} color="success">
+                    <strong>Success Default</strong>
+                  <//>
+                  <${Panel} color="danger">
+                    <strong>Danger Default</strong>
+                  <//>
+                  <${Panel} color="primary">
+                    <strong>Primary Default</strong>
+                  <//>
+                  <${Panel} color="secondary">
+                    <strong>Secondary Default</strong>
+                  <//>
+                </>
+                
+                <h3 style="margin: 24px 0 12px; opacity: 0.8;">Outlined Panels with Colors</h3>
+                <${ComponentGrid}>
+                  <${Panel} variant="outlined" color="success">
+                    <strong>Success Outlined</strong>
+                  <//>
+                  <${Panel} variant="outlined" color="danger">
+                    <strong>Danger Outlined</strong>
+                  <//>
+                  <${Panel} variant="outlined" color="primary">
+                    <strong>Primary Outlined</strong>
+                  <//>
+                  <${Panel} variant="outlined" color="secondary">
+                    <strong>Secondary Outlined</strong>
+                  <//>
+                </>
+              </${Section}>
+              
+              <${Section}>
+                <${SectionTitle}>Input Component</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">widthScale: normal (200px) | compact (50px) | full (100%). heightScale: normal (44px) | compact (34px).</p>
+
+                <h4 style="margin: 16px 0 8px;">States (widthScale="normal", heightScale="normal")</h4>
+                <${ComponentGrid}>
+                  <${Input} label="Basic Input" placeholder="Enter text..." />
+                  <${Input} label="With Value" value="Hello World" />
+                  <${Input} label="Disabled" disabled=${true} value="Cannot edit" />
+                  <${Input} label="With Error" error="This field is required" />
+                <//>
+
+                <h4 style="margin: 16px 0 8px;">widthScale variants</h4>
+                <${ComponentGrid}>
+                  <${Input} label="normal (200px)" widthScale="normal" placeholder="200px wide" />
+                  <${Input} label="compact (50px)" widthScale="compact" />
+                <//>
+                <div style="margin-top: 16px; display: flex;">
+                  <${Input} label="full (100% + flex-grow)" widthScale="full" placeholder="Spans full width..." />
+                </div>
+
+                <h4 style="margin: 16px 0 8px;">heightScale variants</h4>
+                <${ComponentGrid}>
+                  <${Input} label="normal (44px)" heightScale="normal" placeholder="Standard height" />
+                  <${Input} label="compact (34px)" heightScale="compact" placeholder="Compact height" />
+                <//>
+
+                <h4 style="margin: 16px 0 8px;">Combined: widthScale="full" + heightScale="compact"</h4>
+                <div style="display: flex;">
+                  <${Input} label="Full-width compact" widthScale="full" heightScale="compact" placeholder="Full width, compact height..." />
+                </div>
+
+                <h4 style="margin: 16px 0 8px;">With icon button overlay (top-right)</h4>
+                <div style="display: flex; flex-direction: column; gap: 8px; max-width: 400px;">
+                  <${Input}
+                    label="With action button"
+                    widthScale="full"
+                    placeholder="Button overlays top-right..."
+                    buttonProps=${{ icon: 'captions', title: 'Generate', onClick: () => alert('generate!') }}
+                  />
+                  <${Input}
+                    label="Disabled button"
+                    widthScale="full"
+                    placeholder="Button disabled..."
+                    buttonProps=${{ icon: 'captions', title: 'Generate', disabled: true, onClick: () => {} }}
+                  />
+                </div>
+              </${Section}>
+
+              <${Section}>
+                <${SectionTitle}>Select Component</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">widthScale: normal (200px) | compact (50px) | full (100%). heightScale: normal (44px) | compact (34px).</p>
+
+                <h4 style="margin: 16px 0 8px;">States (widthScale="normal", heightScale="normal")</h4>
+                <${ComponentGrid}>
+                  <${Select}
+                    label="Basic Select"
+                    options=${[
+                      { label: 'Option 1', value: '1' },
+                      { label: 'Option 2', value: '2' },
+                      { label: 'Option 3', value: '3' },
+                    ]}
+                  />
+                  <${Select}
+                    label="With Selection"
+                    value="2"
+                    options=${[
+                      { label: 'First', value: '1' },
+                      { label: 'Second', value: '2' },
+                      { label: 'Third', value: '3' },
+                    ]}
+                  />
+                  <${Select}
+                    label="Disabled"
+                    disabled=${true}
+                    options=${[{ label: 'Cannot change', value: '1' }]}
+                  />
+                  <${Select}
+                    label="With Error"
+                    error="Please select an option"
+                    options=${[{ label: 'Choose...', value: '' }]}
+                  />
+                <//>
+
+                <h4 style="margin: 16px 0 8px;">widthScale variants</h4>
+                <${ComponentGrid}>
+                  <${Select} label="normal (200px)" widthScale="normal" options=${[{ label: 'Option', value: '1' }]} />
+                  <${Select} label="compact (50px)" widthScale="compact" options=${[
+                    { label: 'A', value: 'a' },
+                    { label: 'B', value: 'b' },
+                  ]} />
+                <//>
+                <div style="margin-top: 16px; display: flex;">
+                  <${Select} label="full (100% + flex-grow)" widthScale="full" options=${[
+                    { label: 'Option 1', value: '1' },
+                    { label: 'Option 2', value: '2' },
+                  ]} />
+                </div>
+
+                <h4 style="margin: 16px 0 8px;">heightScale variants</h4>
+                <${ComponentGrid}>
+                  <${Select} label="normal (44px)" heightScale="normal" options=${[{ label: 'Standard', value: '1' }]} />
+                  <${Select} label="compact (34px)" heightScale="compact" options=${[{ label: 'Compact', value: '1' }]} />
+                <//>
+
+                <h4 style="margin: 16px 0 8px;">Combined: widthScale="full" + heightScale="compact"</h4>
+                <div style="display: flex;">
+                  <${Select} label="Full-width compact" widthScale="full" heightScale="compact" options=${[
+                    { label: 'Option 1', value: '1' },
+                    { label: 'Option 2', value: '2' },
+                  ]} />
+                </div>
+
+                <h4 style="margin: 16px 0 8px;">With icon button inside trigger</h4>
+                <${ComponentGrid}>
+                  <${Select}
+                    label="With action button"
+                    value="2"
+                    options=${[
+                      { label: 'Option 1', value: '1' },
+                      { label: 'Option 2', value: '2' },
+                      { label: 'Option 3', value: '3' },
+                    ]}
+                    buttonProps=${{
+                      icon: 'info',
+                      title: 'View definition',
+                      onClick: (e) => {
+                        e.stopPropagation()
+                        alert('definition!')
+                      },
+                    }}
+                  />
+                </${ComponentGrid}>
+              </${Section}>
+
+              <${Section}>
+                <${SectionTitle}>Textarea Component</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">widthScale: normal (200px) | compact (50px) | full (100%, default). No heightScale — uses min-height + vertical resize.</p>
+
+                <h4 style="margin: 16px 0 8px;">States (widthScale="normal")</h4>
+                <${ComponentGrid}>
+                  <${Textarea} label="Basic Textarea" widthScale="normal" placeholder="Enter text here..." />
+                  <${Textarea} label="With Value" widthScale="normal" value="Some existing content." />
+                  <${Textarea} label="Disabled" widthScale="normal" disabled=${true} value="Cannot edit" />
+                  <${Textarea} label="With Error" widthScale="normal" error="This field is required" />
+                </${ComponentGrid}>
+
+                <h4 style="margin: 16px 0 8px;">widthScale variants</h4>
+                <${ComponentGrid}>
+                  <${Textarea} label="normal (200px)" widthScale="normal" placeholder="200px wide" />
+                  <${Textarea} label="compact (50px)" widthScale="compact" />
+                <//>
+                <div style="margin-top: 16px; display: flex;">
+                  <${Textarea} label="full (100% + flex-grow, default)" widthScale="full" placeholder="Spans full width by default..." rows=${3} />
+                </div>
+
+                <h4 style="margin: 16px 0 8px;">With icon button overlay (top-right)</h4>
+                <div style="display: flex; flex-direction: column; gap: 8px; max-width: 400px;">
+                  <${Textarea}
+                    label="With action button"
+                    widthScale="full"
+                    placeholder="Button overlays top-right..."
+                    rows=${3}
+                    buttonProps=${{ icon: 'captions', title: 'Generate', onClick: () => alert('generate!') }}
+                  />
+                  <${Textarea}
+                    label="Disabled button"
+                    widthScale="full"
+                    placeholder="Button disabled..."
+                    rows=${3}
+                    buttonProps=${{ icon: 'captions', title: 'Generate', disabled: true, onClick: () => {} }}
+                  />
+                </div>
+              </${Section}>
+              
+              <${Section}>
+                <${SectionTitle}>Checkbox Component</${SectionTitle}>
+                <${ComponentGrid}>
+                  <${Checkbox} label="Click to toggle" checked=${this.state.checkbox1} onChange=${this.handleCheckbox('checkbox1')} />
+                  <${Checkbox} label="Initially checked" checked=${this.state.checkbox2} onChange=${this.handleCheckbox('checkbox2')} />
+                  <${Checkbox} label="Disabled Unchecked" disabled=${true} />
+                  <${Checkbox} label="Disabled Checked" checked=${true} disabled=${true} />
+                  <${Checkbox} label="Label on Left" labelPosition="left" checked=${this.state.checkbox3} onChange=${this.handleCheckbox('checkbox3')} />
+                  <${Checkbox} checked=${this.state.checkbox1} onChange=${this.handleCheckbox('checkbox1')} />
+                </${ComponentGrid}>
+              </${Section}>
+              
+              
+              <!-- IO: Slider -->
+              <${Section}>
+                <${SectionTitle}>Slider Component<//>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Single-value slider — layout mirrors RangeSlider so they stack and align.</p>
+
+                <div style="max-width: 400px;">
+                  <${Slider}
+                    label="Gain (0–1)"
+                    minAllowed=${0}
+                    maxAllowed=${1}
+                    snap=${0.01}
+                    value=${this.state.sliderGain}
+                    widthScale="full"
+                    onChange=${(v) => {
+                      console.log('[Slider gain] onChange:', v)
+                      this.setState({ sliderGain: v })
+                    }}
+                  />
+                  <${RangeSlider}
+                    label="Gain Range (stacked for alignment check)"
+                    minAllowed=${0}
+                    maxAllowed=${1}
+                    snap=${0.01}
+                    min=${0.3}
+                    max=${0.7}
+                    widthScale="full"
+                    onChange=${({ min, max }) => console.log('[RangeSlider align] onChange:', { min, max })}
+                  />
+                </div>
+
+                <div style="max-width: 400px; margin-top: 16px;">
+                  <${Slider}
+                    label="Pan (–1 to +1)"
+                    minAllowed=${-1}
+                    maxAllowed=${1}
+                    snap=${0.1}
+                    value=${this.state.sliderPan}
+                    widthScale="full"
+                    onChange=${(v) => {
+                      console.log('[Slider pan] onChange:', v)
+                      this.setState({ sliderPan: v })
+                    }}
+                  />
+                </div>
+
+                <div style="max-width: 400px; margin-top: 16px;">
+                  <${Slider}
+                    label="Pan Value — knob variant (no fill)"
+                    minAllowed=${-1}
+                    maxAllowed=${1}
+                    snap=${0.1}
+                    value=${0}
+                    widthScale="full"
+                    variant="knob"
+                    onChange=${(v) => console.log('[Slider knob] onChange:', v)}
+                  />
+                </div>
+
+                <div style="max-width: 400px; margin-top: 16px;">
+                  <${Slider}
+                    label="Disabled"
+                    minAllowed=${0}
+                    maxAllowed=${100}
+                    value=${42}
+                    widthScale="full"
+                    disabled=${true}
+                  />
+                </div>
+              <//>
+
+              <!-- IO: RangeSlider -->
+              <${Section}>
+                <${SectionTitle}>RangeSlider Component<//>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Dual-handle range slider using two native input[type="range"] elements</p>
+
+                <div style="max-width: 400px;">
+                  <${RangeSlider}
+                    label="Default Range"
+                    minAllowed=${0}
+                    maxAllowed=${100}
+                    min=${this.state.rangeDefault.min}
+                    max=${this.state.rangeDefault.max}
+                    onChange=${({ min, max }) => {
+                      console.log('[RangeSlider default] onChange:', {
+                        min,
+                        max,
+                      })
+                      this.setState({ rangeDefault: { min, max } })
+                    }}
+                  />
+                </div>
+
+                <div style="max-width: 400px;">
+                  <${RangeSlider}
+                    label="Snap to 0.5"
+                    minAllowed=${0}
+                    maxAllowed=${10}
+                    snap=${0.5}
+                    min=${this.state.rangeSnap.min}
+                    max=${this.state.rangeSnap.max}
+                    onChange=${({ min, max }) => {
+                      console.log('[RangeSlider snap] onChange:', { min, max })
+                      this.setState({ rangeSnap: { min, max } })
+                    }}
+                  />
+                </div>
+
+                <div style="max-width: 200px;">
+                  <${RangeSlider}
+                    label="Narrow Range"
+                    minAllowed=${20}
+                    maxAllowed=${60}
+                    min=${this.state.rangeNarrow.min}
+                    max=${this.state.rangeNarrow.max}
+                    onChange=${({ min, max }) => {
+                      console.log('[RangeSlider narrow] onChange:', {
+                        min,
+                        max,
+                      })
+                      this.setState({ rangeNarrow: { min, max } })
+                    }}
+                  />
+                </div>
+              <//>
+
+              <!-- IO: DiscreteSlider -->
+              <${Section}>
+                <${SectionTitle}>DiscreteSlider Component<//>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Slider for choosing from a fixed list of labeled options</p>
+
+                <div style="max-width: 600px;">
+                  <${DiscreteSlider}
+                    label="Qualitative Slider"
+                    options=${['very low', 'low', 'medium', 'high', 'very high']}
+                    value=${this.state.discreteValue}
+                    onChange=${(e) => {
+                      console.log('[DiscreteSlider] onChange:', e.target.value)
+                      this.setState({ discreteValue: e.target.value })
+                    }}
+                  />
+                </div>
+
+                <div style="max-width: 600px;">
+                  <${DiscreteSlider}
+                    label="Numeric Slider"
+                    options=${[0.25, 0.5, 1, 1.5, 2, 4]}
+                    value=${1}
+                    onChange=${(e) => console.log('[DiscreteSlider numeric] onChange:', e.target.value)}
+                  />
+                </div>
+              <//>
+
+              <!-- IO: ToggleSwitch -->
+              <${Section}>
+                <${SectionTitle}>ToggleSwitch Component<//>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Toggle using a hidden checkbox with CSS-driven visual transitions</p>
+
+                <${ComponentGrid}>
+                  <!-- Default toggle (no label) -->
+                  <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start;">
+                    <span style="font-size: 12px; opacity: 0.6;">Default toggle</span>
+                    <${ToggleSwitch}
+                      checked=${this.state.toggle1}
+                      onChange=${(e) => {
+                        console.log(
+                          '[ToggleSwitch default] onChange:',
+                          e.target.checked,
+                        )
+                        this.setState({ toggle1: e.target.checked })
+                      }}
+                    />
+                  </div>
+
+                  <!-- Toggle with label (initially on) -->
+                  <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start;">
+                    <span style="font-size: 12px; opacity: 0.6;">With label (initially on)</span>
+                    <${ToggleSwitch}
+                      label="Enable feature"
+                      checked=${this.state.toggle2}
+                      onChange=${(e) => {
+                        console.log(
+                          '[ToggleSwitch labeled] onChange:',
+                          e.target.checked,
+                        )
+                        this.setState({ toggle2: e.target.checked })
+                      }}
+                    />
+                  </div>
+
+                  <!-- Disabled toggle -->
+                  <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-start;">
+                    <span style="font-size: 12px; opacity: 0.6;">Disabled</span>
+                    <${ToggleSwitch}
+                      label="Unavailable"
+                      checked=${this.state.toggle3Disabled}
+                      disabled=${true}
+                      onChange=${(e) => console.log('[ToggleSwitch disabled] onChange:', e.target.checked)}
+                    />
+                  </div>
+                <//>
+              <//>
+
+              <!-- IO: MultiSelect -->
+              <${Section}>
+                <${SectionTitle}>MultiSelect Component<//>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Button that opens a portal-rendered popover checklist anchored below (or above) the trigger</p>
+
+                <${ComponentGrid}>
+                  <div style="display: flex; flex-direction: column; gap: 16px; min-width: 240px;">
+                    <${MultiSelect}
+                      label="Musical Keys"
+                      placeholder="Select keys…"
+                      options=${['C major', 'D major', 'E major', 'F major', 'G major', 'A major', 'B major', 'C minor', 'D minor', 'E minor', 'F minor', 'G minor', 'A minor', 'B minor'].map((k) => ({ label: k, value: k }))}
+                      value=${this.state.multiSelectKeys}
+                      onChange=${(v) => this.setState({ multiSelectKeys: v })}
+                    />
+                    <${MultiSelect}
+                      label="Time Signatures"
+                      placeholder="Select time signatures…"
+                      options=${[
+                        { label: '2/4', value: '2' },
+                        { label: '3/4', value: '3' },
+                        { label: '4/4', value: '4' },
+                        { label: '6/8', value: '6' },
+                      ]}
+                      value=${this.state.multiSelectSig}
+                      onChange=${(v) => this.setState({ multiSelectSig: v })}
+                    />
+                    <div style="font-size: 12px; opacity: 0.6;">
+                      Keys: ${JSON.stringify(this.state.multiSelectKeys)}<br/>
+                      Sig: ${JSON.stringify(this.state.multiSelectSig)}
+                    </div>
+                    <${MultiSelect}
+                      label="With icon button"
+                      placeholder="Select…"
+                      options=${[
+                        { label: 'A', value: 'A' },
+                        { label: 'B', value: 'B' },
+                        { label: 'C', value: 'C' },
+                      ]}
+                      value=${[]}
+                      onChange=${() => {}}
+                      buttonProps=${{
+                        icon: 'info',
+                        title: 'Info',
+                        onClick: (e) => {
+                          e.stopPropagation()
+                          alert('button clicked')
+                        },
+                      }}
+                    />
+                    <${MultiSelect}
+                      label="With option tooltips (hover options to see)"
+                      placeholder="Select genre…"
+                      options=${[
+                        {
+                          label: 'Classical',
+                          value: 'classical',
+                          tooltip:
+                            'Orchestral music from the 17th–19th century',
+                        },
+                        {
+                          label: 'Jazz',
+                          value: 'jazz',
+                          tooltip:
+                            'Improvisational style originating in New Orleans',
+                        },
+                        {
+                          label: 'Electronic',
+                          value: 'electronic',
+                          tooltip: 'Synthesised and sequenced sound design',
+                        },
+                      ]}
+                      value=${[]}
+                      onChange=${() => {}}
+                    />
+                  </div>
+                </${ComponentGrid}>
+              </${Section}>
+
+              <!-- IO: Select with option tooltips -->
+              <${Section}>
+                <${SectionTitle}>Select — option tooltips<//>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Hover options in the dropdown to see per-option tooltips</p>
+                <${Select}
+                  label="Genre (hover options)"
+                  options=${[
+                    {
+                      label: 'Rock',
+                      value: 'rock',
+                      tooltip: 'Guitar-driven music with a strong beat',
+                    },
+                    {
+                      label: 'Soul',
+                      value: 'soul',
+                      tooltip:
+                        'Emotionally charged vocals with rhythm and blues roots',
+                    },
+                    {
+                      label: 'Ambient',
+                      value: 'ambient',
+                      tooltip: 'Atmospheric, texture-focused soundscapes',
+                    },
+                  ]}
+                  value=${'rock'}
+                  onChange=${(e) => console.log('[Select tooltip] onChange:', e.target.value)}
+                />
+              </${Section}>
+
+              <${CategoryHeader}>Navigation Components<//>
+
+              <${Section}>
+                <${SectionTitle}>ButtonGroup Component</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Click buttons to toggle selection</p>
+                <${ButtonGroup}
+                  items=${[
+                    { id: 'tag1', name: 'Option A' },
+                    { id: 'tag2', name: 'Option B' },
+                    { id: 'tag3', name: 'Option C' },
+                    { id: 'tag4', name: 'Long Option Name' },
+                  ]}
+                  selected=${this.state.selectedTags}
+                  onSelect=${this.handleTagSelect}
+                />
+                <h4 style="margin: 16px 0 8px;">Medium Variant</h4>
+                <${ButtonGroup}
+                  items=${[
+                    { id: 'a', name: 'First' },
+                    { id: 'b', name: 'Second' },
+                    { id: 'c', name: 'Third' },
+                  ]}
+                  selected=${['a']}
+                  variant="medium-text"
+                />
+              </${Section}>
+              
+              <${Section}>
+                <${SectionTitle}>Navigation Hooks Demo</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Demonstrating usePagination (page-based) and useItemNavigation (item-based) hooks with PaginationControls</p>
+                
+                <h4 style="margin: 16px 0 8px;">usePagination + PaginationControls (Page-based)</h4>
+                <${PageBasedNavigationDemo} />
+                
+                <h4 style="margin: 16px 0 8px;">useItemNavigation + PaginationControls (Item-based)</h4>
+                <${ItemBasedNavigationDemo} 
+                  items=${this.state.itemNavItems}
+                  selected=${this.state.itemNavSelected}
+                  onSelect=${this.handleItemNavSelect}
+                />
+              </${Section}>
+              
+              <${Section}>
+                <${SectionTitle}>TabPanels Component<//>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Horizontal tab-based content switcher with variant styles</p>
+                
+                <h4 style="margin: 16px 0 8px;">Default Variant (medium tabs)</h4>
+                <${TabPanels}
+                  tabs=${[
+                    {
+                      id: 'tab1',
+                      label: 'First Tab',
+                      content: html`<p>
+                        First tab content. This demonstrates the default
+                        variant.
+                      </p>`,
+                    },
+                    {
+                      id: 'tab2',
+                      label: 'Second Tab',
+                      content: html`<p>
+                        Second tab content with more information.
+                      </p>`,
+                    },
+                    {
+                      id: 'tab3',
+                      label: 'Third Tab',
+                      content: html`<p>Third tab content.</p>`,
+                    },
+                  ]}
+                  activeTab=${this.state.activeTab}
+                  onTabChange=${(id) => this.setState({ activeTab: id })}
+                  variant="default"
+                />
+
+                <h4 style="margin: 32px 0 8px;">Elevated Variant</h4>
+                <${TabPanels}
+                  tabs=${[
+                    {
+                      id: 'tab1',
+                      label: 'Overview',
+                      content: html`<p>Elevated panel with shadow effect.</p>`,
+                    },
+                    {
+                      id: 'tab2',
+                      label: 'Details',
+                      content: html`<p>More detailed information here.</p>`,
+                    },
+                    {
+                      id: 'tab3',
+                      label: 'Settings',
+                      content: html`<p>Configuration options.</p>`,
+                    },
+                  ]}
+                  activeTab=${this.state.activeTabVariant}
+                  onTabChange=${(id) => this.setState({ activeTabVariant: id })}
+                  variant="elevated"
+                />
+
+                <h4 style="margin: 32px 0 8px;">Outlined Variant</h4>
+                <${TabPanels}
+                  tabs=${[
+                    {
+                      id: 'tab1',
+                      label: 'First',
+                      content: html`<p>Outlined panel with border.</p>`,
+                    },
+                    {
+                      id: 'tab2',
+                      label: 'Second',
+                      content: html`<p>Second tab.</p>`,
+                    },
+                  ]}
+                  activeTab=${this.state.activeTabVariant}
+                  onTabChange=${(id) => this.setState({ activeTabVariant: id })}
+                  variant="outlined"
+                />
+
+                <h4 style="margin: 32px 0 8px;">Glass Variant</h4>
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 24px; border-radius: 8px;">
+                  <${TabPanels}
+                    tabs=${[
+                      {
+                        id: 'tab1',
+                        label: 'Glass',
+                        content: html`<p>Glass panel with blur effect.</p>`,
+                      },
+                      {
+                        id: 'tab2',
+                        label: 'Effect',
+                        content: html`<p>Semi-transparent background.</p>`,
+                      },
+                    ]}
+                    activeTab=${this.state.activeTabVariant}
+                    onTabChange=${(id) => this.setState({ activeTabVariant: id })}
+                    variant="glass"
+                  />
+                </div>
+
+                <h4 style="margin: 32px 0 8px;">Small Tab Size</h4>
+                <${TabPanels}
+                  tabs=${[
+                    {
+                      id: 'tab1',
+                      label: 'Compact',
+                      content: html`<p>Small tabs for tighter layouts.</p>`,
+                    },
+                    {
+                      id: 'tab2',
+                      label: 'Efficient',
+                      content: html`<p>Uses less vertical space.</p>`,
+                    },
+                    {
+                      id: 'tab3',
+                      label: 'Dense',
+                      content: html`<p>Dense UI style.</p>`,
+                    },
+                  ]}
+                  activeTab=${this.state.activeTabSize}
+                  onTabChange=${(id) => this.setState({ activeTabSize: id })}
+                  tabSize="small-text"
+                  variant="elevated"
+                />
+              <//>
+
+              <${CategoryHeader}>Media Components<//>
+
+              <${Section}>
+                <${SectionTitle}>ImageSelect Component</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Image selection with preview, upload, and overlay controls</p>
+                
+                <${ComponentGrid}>
+                  <${ImageSelect}
+                    label="Empty State"
+                    value=${this.state.imageSelectValue1}
+                    onChange=${this.handleImageChange1}
+                  />
+                  <${ImageSelect}
+                    label="With Image"
+                    value=${this.state.imageSelectValue2}
+                    onChange=${this.handleImageChange2}
+                  />
+                  <${ImageSelect}
+                    label="Disabled"
+                    value=${this.state.imageSelectValue2}
+                    disabled=${true}
+                  />
+                <//>
+              </${Section}>
+              
+              <${Section}>
+                <${SectionTitle}>AudioSelect Component</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Audio selection with album art preview, play controls, and overlay buttons</p>
+                
+                <${ComponentGrid}>
+                  <${AudioSelect}
+                    label="Empty State"
+                    value=${this.state.audioSelectValue1}
+                    onChange=${this.handleAudioChange1}
+                    onSelectFromGallery=${() => console.log('Open audio gallery')}
+                  />
+                  <${AudioSelect}
+                    label="With Audio (Album Art)"
+                    value=${this.state.audioSelectValue2}
+                    onChange=${this.handleAudioChange2}
+                    onSelectFromGallery=${() => console.log('Open audio gallery')}
+                  />
+                  <${AudioSelect}
+                    label="Disabled"
+                    value=${this.state.audioSelectValue2}
+                    disabled=${true}
+                  />
+                <//>
+              </${Section}>
+              
+              <${Section}>
+                <${SectionTitle}>AudioPlayer Component</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Audio player overlay with play/pause, progress bar, and time display</p>
+                
+                <${ComponentGrid}>
+                  <div style="position: relative; width: 300px; height: 150px; border-radius: 8px; overflow: hidden;">
+                    <img src="/js/custom-ui/demo/sample-album-cover-1.jpg" style="width: 100%; height: 100%; object-fit: cover;" />
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 8px;">
+                      <${AudioPlayer} audioUrl="/js/custom-ui/demo/sample-music-track-1.mp3" />
+                    </div>
+                  </div>
+                  <div style="position: relative; width: 300px; height: 150px; border-radius: 8px; overflow: hidden;">
+                    <img src="/js/custom-ui/demo/sample-album-cover-2.jpg" style="width: 100%; height: 100%; object-fit: cover;" />
+                    <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 8px;">
+                      <${AudioPlayer} audioUrl="/js/custom-ui/demo/sample-music-track-2.mp3" />
+                    </div>
+                  </div>
+                  <${AudioPlayer} audioUrl="/js/custom-ui/demo/sample-music-track-3.mp3" />
+                  <${AudioPlayer} widthScale="normal" audioUrl="/js/custom-ui/demo/sample-music-track-4.mp3" />
+                </${ComponentGrid}>
+              </${Section}>
+
+              <${Section}>
+                <${SectionTitle}>VideoPlayer Component</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Video player with play/pause controls and progress timeline. The &lt;video&gt; element lives inside TransitionViewer, mirroring real usage in GeneratedResult.</p>
+                <${ComponentGrid}>
+                  <${VideoPlayerDemo} />
+                </${ComponentGrid}>
+              </${Section}>
+
+              <${Section}>
+                <${SectionTitle}>globalBgmPlayer — BGM Looping Player</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Web Audio API–based background music player with crossfade/fade transitions. Voice (AudioPlayer) and BGM coexist independently.</p>
+                <${ComponentGrid}>
+                  <${BgmPlayerDemo} />
+                </${ComponentGrid}>
+              </${Section}>
+
+              <${CategoryHeader}>Message/Notification Components<//>
+              
+              <${Section}>
+                <${SectionTitle}>Toast Component</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Global notification system with success, error, info, and warning variants</p>
+                
+                <${ComponentGrid}>
+                  <${ToastTriggers} />
+                <//>
+              </${Section}>
+              
+              <${Section}>
+                <${SectionTitle}>ProgressBanner Component</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Fixed banner that displays real-time progress for tasks, auto-dismisses on completion/error. Now uses provider pattern with useProgress hook.</p>
+                
+                <${ComponentGrid}>
+                  <${ProgressTriggers} mockSSEManager=${this.mockSSEManager} />
+                <//>
+              </${Section}>
+              
+              <${CategoryHeader}>Overlay Components<//>
+              
+              <${Section}>
+                <${SectionTitle}>Dialog Component</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Modal dialog with overlay - supports basic alerts, confirmations, and text prompts</p>
+                
+                <${ComponentGrid}>
+                  <${DialogTriggers} />
+                <//>
+              </${Section}>
+              
+              <${Section}>
+                <${SectionTitle}>Modal Component</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Declarative modal component with customizable size, header, content, and footer</p>
+                
+                <${ComponentGrid}>
+                  <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <${Button} 
+                      variant="medium-text"
+                      color="primary"
+                      onClick=${() => this.setState({ modalOpen: true, modalSize: 'small' })}
+                    >
+                      Show Small Modal
+                    <//>
+                    <${Button} 
+                      variant="medium-text"
+                      color="primary"
+                      onClick=${() => this.setState({ modalOpen: true, modalSize: 'medium' })}
+                    >
+                      Show Medium Modal
+                    <//>
+                    <${Button} 
+                      variant="medium-text"
+                      color="primary"
+                      onClick=${() => this.setState({ modalOpen: true, modalSize: 'large' })}
+                    >
+                      Show Large Modal
+                    <//>
+                    <${Button} 
+                      variant="medium-text"
+                      color="secondary"
+                      onClick=${() => createImageModal('/js/custom-ui/demo/sample-album-cover-1.jpg', false, 'Sample Image')}
+                    >
+                      Show Image Modal
+                    <//>
+                    <${Button} 
+                      variant="medium-text"
+                      color="success"
+                      onClick=${() =>
+                        createImageModal(
+                          '/js/custom-ui/demo/sample-album-cover-1.jpg',
+                          true,
+                          'Selectable Image',
+                          () => alert('Image selected!'),
+                          'Select This Image',
+                        )}
+                    >
+                      Show Image Modal with Select
+                    <//>
+                  </div>
+                <//>
+                
+                <${Modal}
+                  isOpen=${this.state.modalOpen}
+                  onClose=${() => this.setState({ modalOpen: false })}
+                  title=${`Modal Example (${this.state.modalSize})`}
+                  size=${this.state.modalSize}
+                  footer=${html`
+                    <${Button}
+                      variant="medium-text"
+                      color="secondary"
+                      onClick=${() => this.setState({ modalOpen: false })}
+                    >
+                      Cancel
+                    <//>
+                    <${Button}
+                      variant="medium-text"
+                      color="primary"
+                      onClick=${() => {
+                        alert('Action confirmed!')
+                        this.setState({ modalOpen: false })
+                      }}
+                    >
+                      Confirm
+                    <//>
+                  `}
+                >
+                  <p>This is a ${this.state.modalSize} size modal with custom footer buttons.</p>
+                  <p style="margin-top: 16px;">The Modal component supports:</p>
+                  <ul style="margin-top: 8px; padding-left: 20px;">
+                    <li>Multiple size variants (small, medium, large, full)</li>
+                    <li>Custom header, content, and footer</li>
+                    <li>Escape key to close</li>
+                    <li>Click outside to close</li>
+                    <li>Body scroll locking when open</li>
+                  </ul>
+                <//>
+              </${Section}>
+              
+              <${Section}>
+                <${SectionTitle}>ListSelect Component</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Modal list selection with optional actions</p>
+                
+                <${ComponentGrid}>
+                  <${Button} 
+                    variant="medium-icon-text" 
+                    icon="list-ul" 
+                    color="primary"
+                    onClick=${() => {
+                      showListSelect({
+                        title: 'Select Item',
+                        items: [
+                          { id: '1', label: 'Option 1' },
+                          { id: '2', label: 'Option 2' },
+                          { id: '3', label: 'Option 3' },
+                          { id: '4', label: 'Disabled Option', disabled: true },
+                        ],
+                        itemIcon: 'check-circle',
+                        onSelectItem: (item) => {
+                          console.log('Selected:', item)
+                        },
+                      })
+                    }}
+                  >
+                    Basic List Select
+                  <//>
+                  
+                  <${Button} 
+                    variant="medium-icon-text" 
+                    icon="folder" 
+                    color="secondary"
+                    onClick=${() => {
+                      showListSelect({
+                        title: 'Select Folder',
+                        items: [
+                          { id: 'f1', label: 'Documents', icon: 'folder' },
+                          { id: 'f2', label: 'Images', icon: 'folder' },
+                          { id: 'f3', label: 'Videos', icon: 'folder' },
+                        ],
+                        selectedId: 'f2',
+                        onSelectItem: (item) => {
+                          console.log('Selected folder:', item)
+                        },
+                      })
+                    }}
+                  >
+                    Folder Select
+                  <//>
+                  
+                  <${Button}
+                    variant="medium-icon-text"
+                    icon="cog"
+                    color="success"
+                    onClick=${() => {
+                      showListSelect({
+                        title: 'Manage Items',
+                        items: [
+                          { id: 'i1', label: 'Editable Item 1', icon: 'file' },
+                          { id: 'i2', label: 'Editable Item 2', icon: 'file' },
+                          {
+                            id: 'i3',
+                            label: 'Protected Item',
+                            icon: 'lock',
+                            disabled: true,
+                          },
+                        ],
+                        itemActions: [
+                          {
+                            icon: 'edit',
+                            title: 'Edit',
+                            onClick: (item) => console.log('Edit:', item),
+                          },
+                          {
+                            icon: 'trash',
+                            color: 'danger',
+                            title: 'Delete',
+                            onClick: (item) => console.log('Delete:', item),
+                          },
+                        ],
+                        actionLabel: 'New Item',
+                        onSelectItem: (item) => {
+                          console.log('Selected:', item)
+                        },
+                        onAction: () => {
+                          console.log('Create new item')
+                        },
+                      })
+                    }}
+                  >
+                    With Actions
+                  <//>
+
+                  <${Button}
+                    variant="medium-icon-text"
+                    icon="list-ul"
+                    color="secondary"
+                    onClick=${() => {
+                      showListSelect({
+                        title: 'Narrow Variant',
+                        variant: 'narrow',
+                        items: [
+                          { id: 'n1', label: 'Workflow Alpha', icon: 'video' },
+                          { id: 'n2', label: 'Workflow Beta', icon: 'image' },
+                          { id: 'n3', label: 'Workflow Gamma', icon: 'music' },
+                        ],
+                        itemActions: [
+                          {
+                            icon: 'copy',
+                            title: 'Duplicate',
+                            onClick: (item) => console.log('Duplicate:', item),
+                            closeAfter: true,
+                          },
+                          {
+                            icon: 'trash',
+                            color: 'danger',
+                            title: 'Delete',
+                            onClick: (item) => console.log('Delete:', item),
+                          },
+                        ],
+                        onSelectItem: (item) => {
+                          console.log('Selected:', item)
+                        },
+                      })
+                    }}
+                  >
+                    Narrow Variant
+                  <//>
+                  
+                  <${Button} 
+                    variant="medium-icon-text" 
+                    icon="loader" 
+                    color="secondary"
+                    onClick=${() => {
+                      showListSelect({
+                        title: 'Loading State',
+                        items: [],
+                        emptyMessage: 'Loading...',
+                      })
+                    }}
+                  >
+                    Loading State
+                  </>
+                  
+                  <${Button} 
+                    variant="medium-icon-text" 
+                    icon="x-circle" 
+                    color="secondary"
+                    onClick=${() => {
+                      showListSelect({
+                        title: 'Empty List',
+                        items: [],
+                      })
+                    }}
+                  >
+                    Empty State
+                  <//>
+                <//>
+              </${Section}>
+              
+              <${Section}>
+                <${SectionTitle}>Hover Panel Component<//>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Context-based hover panel for tooltips and floating content</p>
+                
+                <${ComponentGrid}>
+                  <${HoverPanelTriggers} />
+                </>
+              <//>
+
+              <${Section}>
+                <${SectionTitle}>FloatingPanel Component<//>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Draggable, portal-rendered overlay panel with optional toolbar actions</p>
+                
+                <${ComponentGrid}>
+                  <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <${Button} 
+                      variant="medium-text"
+                      color="primary"
+                      onClick=${() =>
+                        this.setState({
+                          floatingPanelOpen: true,
+                          floatingPanelPosition: 'center',
+                          floatingPanelVariant: 'elevated',
+                        })}
+                    >
+                      Show Floating Panel (Center)
+                    <//>
+                    <${Button} 
+                      variant="medium-text"
+                      color="primary"
+                      onClick=${() =>
+                        this.setState({
+                          floatingPanelOpen: true,
+                          floatingPanelPosition: 'top-right',
+                          floatingPanelVariant: 'elevated',
+                        })}
+                    >
+                      Show Panel (Top Right)
+                    <//>
+                    <${Button} 
+                      variant="medium-text"
+                      color="primary"
+                      onClick=${() =>
+                        this.setState({
+                          floatingPanelOpen: true,
+                          floatingPanelPosition: 'bottom-left',
+                          floatingPanelVariant: 'outlined',
+                        })}
+                    >
+                      Show Panel (Bottom Left, Outlined)
+                    <//>
+                    <${Button} 
+                      variant="medium-text"
+                      color="primary"
+                      onClick=${() =>
+                        this.setState({
+                          floatingPanelOpen: true,
+                          floatingPanelPosition: 'left',
+                          floatingPanelVariant: 'glass',
+                        })}
+                    >
+                      Show Panel (Left, Glass)
+                    <//>
+                    <${Button} 
+                      variant="medium-text"
+                      color="primary"
+                      onClick=${() =>
+                        this.setState({
+                          floatingPanelOpen: true,
+                          floatingPanelPosition: 'top',
+                          floatingPanelVariant: 'default',
+                        })}
+                    >
+                      Show Panel (Top, Default)
+                    <//>
+                  </div>
+                <//>
+                
+                <${FloatingPanel}
+                  isOpen=${this.state.floatingPanelOpen}
+                  onClose=${() => this.setState({ floatingPanelOpen: false })}
+                  initialPosition=${this.state.floatingPanelPosition}
+                  variant=${this.state.floatingPanelVariant}
+                  width="400px"
+                  actions=${[
+                    {
+                      icon: 'refresh',
+                      color: 'primary',
+                      onClick: () => {
+                        console.log('Refresh action clicked')
+                      },
+                    },
+                    {
+                      icon: 'save',
+                      color: 'success',
+                      onClick: () => {
+                        console.log('Save action clicked')
+                      },
+                    },
+                  ]}
+                  footer=${html`
+                    <${Button}
+                      variant="medium-text"
+                      onClick=${() => {
+                        console.log('Cancel button clicked')
+                      }}
+                    >
+                      Cancel
+                    <//>
+                    <${Button}
+                      variant="medium-text"
+                      color="primary"
+                      onClick=${() => {
+                        console.log('Save button clicked')
+                      }}
+                    >
+                      Save
+                    <//>
+                  `}
+                >
+                  <h3 style="margin-top: 0;">Floating Panel Demo</h3>
+                  <p>This panel is draggable. Grab the handle (menu icon) at the top-left and drag to move it.</p>
+                  <p style="margin-top: 16px;">Features:</p>
+                  <ul style="padding-left: 20px;">
+                    <li>Portal rendering to document.body</li>
+                    <li>Draggable via toolbar handle</li>
+                    <li>Multiple initial positions</li>
+                    <li>Variant styles (default, elevated, outlined, glass)</li>
+                    <li>Optional action buttons in toolbar</li>
+                    <li>Optional close button</li>
+                    <li>Optional footer slot for action buttons</li>
+                  </ul>
+                  <p style="margin-top: 16px;">Position: <strong>${this.state.floatingPanelPosition}</strong></p>
+                  <p>Variant: <strong>${this.state.floatingPanelVariant}</strong></p>
+                <//>
+              <//>
+
+              <!-- More component sections will be added as they are refactored -->
+
+              <!-- SearchSelectModal -->
+              <${Section}>
+                <${SectionTitle}>Search Select Modal</${SectionTitle}>
+                <p style="margin-bottom: 16px; opacity: 0.7;">Generic search-and-select modal with single and multi modes. Supports string arrays and {label, value} arrays.</p>
+
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                  <!-- Single-select trigger -->
+                  <${Button}
+                    variant="medium-text"
+                    color="primary"
+                    onClick=${() => this.setState({ searchSelectSingleOpen: true })}
+                  >
+                    Open Single-Select Modal
+                  <//>
+                  ${this.state.searchSelectSingleResult != null ? html`<p style="opacity: 0.7; font-size: 14px;">Last selected: <strong>${this.state.searchSelectSingleResult}</strong></p>` : null}
+
+                  <!-- Multi-select trigger -->
+                  <${Button}
+                    variant="medium-text"
+                    color="secondary"
+                    onClick=${() => this.setState({ searchSelectMultiOpen: true })}
+                  >
+                    Open Multi-Select Modal
+                  <//>
+                  ${this.state.searchSelectMultiResult.length > 0 ? html`<p style="opacity: 0.7; font-size: 14px;">Selected: <strong>${this.state.searchSelectMultiResult.join(', ')}</strong></p>` : null}
+                  ${this.state.searchSelectActionResult != null ? html`<p style="opacity: 0.7; font-size: 14px;">Last action: <strong>Clone ${this.state.searchSelectActionResult}</strong></p>` : null}
+                </div>
+
+                <!-- Single-select modal instance -->
+                <${SearchSelectModal}
+                  isOpen=${this.state.searchSelectSingleOpen}
+                  title="Pick a Fruit"
+                  items=${['Apple', 'Banana', 'Cherry', 'Dragonfruit', 'Elderberry', 'Fig', 'Grape', 'Honeydew', 'Kiwi', 'Lemon', 'Mango', 'Nectarine', 'Orange', 'Papaya', 'Quince']}
+                  mode="single"
+                  displayLimit=${10}
+                  itemActions=${[{ icon: 'copy', title: 'Clone', onClick: (item) => this.setState({ searchSelectActionResult: item.label }), closeAfter: true }]}
+                  onSelect=${(value) => this.setState({ searchSelectSingleResult: value })}
+                  onClose=${() => this.setState({ searchSelectSingleOpen: false })}
+                />
+
+                <!-- Multi-select modal instance -->
+                <${SearchSelectModal}
+                  isOpen=${this.state.searchSelectMultiOpen}
+                  title="Pick Colours"
+                  items=${[
+                    { label: 'Red', value: 'red' },
+                    { label: 'Green', value: 'green' },
+                    { label: 'Blue', value: 'blue' },
+                    { label: 'Yellow', value: 'yellow' },
+                    { label: 'Purple', value: 'purple' },
+                    { label: 'Orange', value: 'orange' },
+                    { label: 'Pink', value: 'pink' },
+                    { label: 'Brown', value: 'brown' },
+                    { label: 'Black', value: 'black' },
+                    { label: 'White', value: 'white' },
+                  ]}
+                  mode="multi"
+                  initialSelected=${this.state.searchSelectMultiResult}
+                  itemActions=${[{ icon: 'copy', title: 'Clone', onClick: (item) => this.setState({ searchSelectActionResult: item.label }), closeAfter: true }]}
+                  onSelect=${(values) => this.setState({ searchSelectMultiResult: values })}
+                  onClose=${() => this.setState({ searchSelectMultiOpen: false })}
+                />
+              </${Section}>
+
+              <${Section}>
+                <${SectionTitle}>TransitionViewer</${SectionTitle}>
+                <${TransitionViewerDemo} />
+              </${Section}>
+
+              <${Section}>
+                <${SectionTitle}>Pill</${SectionTitle}>
+                <${MutedText}>
+                  Shared pill component — static, dismiss (× left), interactive icon, template toggle.
+                  All variants support five color themes and a disabled state.
+                </${MutedText}>
+                <${PillDemo} />
+              </${Section}>
+
+              <${Section}>
+                <${SectionTitle}>AutocompleteDropdown + useAutocomplete</${SectionTitle}>
+                <${MutedText}>
+                  Standalone autocomplete hook composed with a plain input. Type to filter suggestions;
+                  showEmptyOnNoResults=false closes the dropdown when there are no matches.
+                  Arrow keys navigate · Enter/Tab confirm · Esc closes.
+                </${MutedText}>
+                <${AutocompleteDemo} />
+              </${Section}>
+
+              <${Section}>
+                <${SectionTitle}>ContentEditablePillInput</${SectionTitle}>
+                <${MutedText}>
+                  Contenteditable pill input with autocomplete dropdown.
+                  Tab = autocomplete or verbatim pill · Comma = verbatim pill · Enter = newline (multiline mode).
+                  Backspace on empty trailing text deletes the last pill.
+                </${MutedText}>
+                <${ContentEditablePillInputDemo} />
+              </${Section}>
+
+                </${Page}>
+              <//>
+            <//>
+          <//>
+        <//>
+        `
+        }
+      }
+
+      // Render the test app
+      render(html`<${TestApp} />`, document.getElementById('app'))
+    </script>
+  </body>
+</html>

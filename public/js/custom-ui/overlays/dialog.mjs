@@ -1,0 +1,517 @@
+// Custom Dialog Module
+import { render, Component } from 'preact'
+import { html } from 'htm/preact'
+import { createPortal } from 'preact/compat'
+import { currentTheme } from '../theme.mjs'
+import { Button } from '../io/button.mjs'
+import { Input } from '../io/input.mjs'
+import {
+  OverlayDismiss,
+  BaseContainer,
+  BaseHeader,
+  BaseTitle,
+  BaseContent,
+  BaseFooter,
+} from './modal-base.mjs'
+
+// ============================================================================
+// Dialog Component
+// ============================================================================
+
+// Dialog component
+class Dialog extends Component {
+  constructor(props) {
+    super(props)
+  }
+
+  componentDidMount() {
+    // Set up escape key listener
+    document.addEventListener('keydown', this.handleKeyDown)
+  }
+
+  componentWillUnmount() {
+    // Clean up event listener
+    document.removeEventListener('keydown', this.handleKeyDown)
+  }
+
+  handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      this.handleClose()
+    } else if (
+      e.key === 'Enter' &&
+      this.props.options &&
+      this.props.options.length > 0
+    ) {
+      // Enter key selects the first option if options are available
+      this.handleOptionClick(this.props.options[0])
+    }
+  }
+
+  handleClose = () => {
+    if (this.props.onClose) {
+      this.props.onClose(null)
+    }
+  }
+
+  handleOptionClick = (optionText) => {
+    if (this.props.onClose) {
+      this.props.onClose(optionText)
+    }
+  }
+
+  renderButtons() {
+    const { options } = this.props
+
+    if (options && Array.isArray(options) && options.length > 0) {
+      // Create option buttons - first option is danger (destructive action), rest are primary
+      return options.map((optionText, index) => {
+        const color = index === 0 ? 'danger' : 'primary'
+        return html`
+          <${Button}
+            key=${optionText}
+            variant="medium-text"
+            color=${color}
+            onClick=${() => this.handleOptionClick(optionText)}
+            ref=${
+              index === 0
+                ? (btn) => {
+                    if (btn && btn.buttonRef)
+                      setTimeout(() => btn.buttonRef.focus(), 0)
+                  }
+                : null
+            }
+          >
+            ${optionText}
+          </${Button}>
+        `
+      })
+    } else {
+      // Create default close button for backward compatibility
+      return html`
+        <${Button}
+          variant="medium-text"
+          color="secondary"
+          onClick=${this.handleClose}
+          ref=${(btn) => {
+            if (btn && btn.buttonRef) setTimeout(() => btn.buttonRef.focus(), 0)
+          }}
+        >
+          Close
+        </${Button}>
+      `
+    }
+  }
+
+  render() {
+    const { text, title } = this.props
+    const theme = currentTheme.value
+
+    // Process content text
+    const contentText = text.trim() ? text : ''
+    const isEmpty = !text.trim()
+
+    return createPortal(
+      html`
+        <${OverlayDismiss}
+          bgColor=${theme.colors.overlay.background}
+          onClose=${this.handleClose}
+          class="dialog-overlay"
+        >
+          <${BaseContainer}
+            bgColor=${theme.colors.background.card}
+            textColor=${theme.colors.text.primary}
+            borderRadius=${theme.spacing.medium.borderRadius}
+            maxWidth="500px"
+            maxHeight="400px"
+            shadowColor=${theme.shadow.colorStrong}
+          >
+            <${BaseHeader} marginBottom="16px">
+              <${BaseTitle} 
+                color=${theme.colors.text.primary}
+                fontFamily=${theme.typography.fontFamily}
+                fontWeight=${theme.typography.fontWeight.bold}
+              >
+                ${title}
+              </${BaseTitle}>
+            </${BaseHeader}>
+            <${BaseContent}
+              isEmpty=${isEmpty}
+              color=${isEmpty ? theme.colors.text.muted : theme.colors.text.secondary}
+              fontFamily=${theme.typography.fontFamily}
+              fontSize=${theme.typography.fontSize.medium}
+              marginBottom="20px"
+            >
+              ${contentText}
+            </${BaseContent}>
+            <${BaseFooter} 
+              gap="10px"
+              marginTop="20px"
+            >
+              ${this.renderButtons()}
+            </${BaseFooter}>
+          </${BaseContainer}>
+        </${OverlayDismiss}>
+      `,
+      document.body,
+    )
+  }
+}
+
+// ============================================================================
+// TextPromptDialog Component
+// ============================================================================
+
+// TextPromptDialog component
+class TextPromptDialog extends Component {
+  constructor(props) {
+    super(props)
+    this.state = {
+      inputValue: props.initialValue || '',
+    }
+    this.inputId = 'text-prompt-input-' + Math.random().toString(36).slice(2)
+  }
+
+  componentDidMount() {
+    // Set up keyboard listeners
+    document.addEventListener('keydown', this.handleKeyDown)
+    // Focus the input and select-all when there is a prefilled value
+    setTimeout(() => {
+      const el = document.getElementById(this.inputId)
+      if (el) {
+        el.focus()
+        if (this.props.initialValue) el.select()
+      }
+    }, 0)
+  }
+
+  componentWillUnmount() {
+    // Clean up event listener
+    document.removeEventListener('keydown', this.handleKeyDown)
+  }
+
+  handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      this.handleCancel()
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      this.handleConfirm()
+    }
+  }
+
+  handleInputChange = (e) => {
+    this.setState({ inputValue: e.target.value })
+  }
+
+  handleConfirm = () => {
+    if (this.props.onConfirm) {
+      this.props.onConfirm(this.state.inputValue)
+    }
+  }
+
+  handleCancel = () => {
+    if (this.props.onCancel) {
+      this.props.onCancel()
+    }
+  }
+
+  render() {
+    const { title, placeholder } = this.props
+    const { inputValue } = this.state
+    const theme = currentTheme.value
+
+    return createPortal(
+      html`
+        <${OverlayDismiss}
+          bgColor=${theme.colors.overlay.background}
+          onClose=${this.handleCancel}
+        >
+          <${BaseContainer}
+            bgColor=${theme.colors.background.card}
+            textColor=${theme.colors.text.primary}
+            borderRadius=${theme.spacing.medium.borderRadius}
+            maxWidth="500px"
+            maxHeight="400px"
+            minWidth="400px"
+            shadowColor=${theme.shadow.colorStrong}
+          >
+            <${BaseHeader} marginBottom="16px">
+            <${BaseTitle}
+              color=${theme.colors.text.primary}
+              fontFamily=${theme.typography.fontFamily}
+              fontWeight=${theme.typography.fontWeight.bold}
+            >
+              ${title}
+            </${BaseTitle}>
+            </${BaseHeader}>
+            <${BaseContent}
+              as="div"
+              color=${theme.colors.text.secondary}
+              fontFamily=${theme.typography.fontFamily}
+              fontSize=${theme.typography.fontSize.medium}
+              marginBottom="20px"
+            >
+              <${Input}
+                id=${this.inputId}
+                type=${this.props.type || 'text'}
+                value=${inputValue}
+                placeholder=${placeholder || ''}
+                onInput=${this.handleInputChange}
+                widthScale="full"
+                min=${this.props.min}
+              />
+            </${BaseContent}>
+            <${BaseFooter}
+              gap="10px"
+              marginTop="20px"
+            >
+              <${Button}
+                variant="medium-text"
+                color="secondary"
+                onClick=${this.handleCancel}
+              >
+                Cancel
+              </${Button}>
+              <${Button}
+                variant="medium-text"
+                color="primary"
+                onClick=${this.handleConfirm}
+                ref=${(btn) => {
+                  if (btn && btn.buttonRef)
+                    setTimeout(() => btn.buttonRef.focus(), 0)
+                }}
+              >
+                OK
+              </${Button}>
+            </${BaseFooter}>
+          </${BaseContainer}>
+        </${OverlayDismiss}>
+      `,
+      document.body,
+    )
+  }
+}
+
+// ============================================================================
+// Exported Functions
+// ============================================================================
+
+/**
+ * Dialog - Modal dialog component with overlay
+ *
+ * Displays a custom modal dialog with title, content text, and action buttons.
+ * The dialog is automatically centered on screen with an overlay background.
+ * Users can close the dialog by clicking buttons, clicking the overlay, or pressing Escape.
+ * Supports portal rendering to ensure proper z-index stacking.
+ *
+ * Internal component - use showDialog() or showTextPrompt() functions to display.
+ *
+ * @param {Object} props
+ * @param {string} props.text - The main content text to display (required)
+ * @param {string} [props.title='Dialog'] - The title displayed in header
+ * @param {Array<string>} [props.options] - Array of button labels. First option is styled as danger (destructive).
+ * @param {Function} props.onClose - Callback when dialog closes, receives selected option or null (required)
+ * @returns {preact.VNode}
+ */
+
+/**
+ * TextPromptDialog - Text input dialog component
+ *
+ * Displays a modal dialog with a text input field for user entry.
+ * Includes Cancel and OK buttons. Enter key confirms, Escape key cancels.
+ *
+ * Internal component - use showTextPrompt() function to display.
+ *
+ * @param {Object} props
+ * @param {string} props.title - Dialog title (required)
+ * @param {string} [props.initialValue=''] - Initial value for text input
+ * @param {string} [props.placeholder=''] - Placeholder text for input field
+ * @param {Function} props.onConfirm - Callback when OK clicked, receives input value (required)
+ * @param {Function} props.onCancel - Callback when cancelled (required)
+ * @returns {preact.VNode}
+ */
+
+/**
+ * Displays a custom modal dialog with the provided text and title.
+ * The dialog is automatically centered on screen with an overlay background.
+ * Users can close the dialog by clicking buttons, clicking outside
+ * the dialog, or pressing the Escape key.
+ *
+ * @param {string} text - The main content text to display in the dialog body.
+ *                       If empty or whitespace-only, shows "No description text provided."
+ * @param {string} [title='Dialog'] - The title to display in the dialog header.
+ *                                           Defaults to 'Dialog' if not provided.
+ * @param {Array<string>} [options] - Array of option labels to display as buttons.
+ *                                   If provided, returns a Promise that resolves with the selected option.
+ *                                   If not provided, shows default "Close" button and returns undefined.
+ *
+ * @returns {Promise<string>|undefined} - If options provided, returns Promise that resolves with selected option label.
+ *                                       If no options, returns undefined for backward compatibility.
+ *
+ * @example
+ * // Basic usage with default title (backward compatible)
+ * showDialog('This is the dialog content');
+ *
+ * @example
+ * // Custom title and content (backward compatible)
+ * showDialog('Image generation completed successfully!', 'Success');
+ *
+ * @example
+ * // With custom options - returns a Promise
+ * const result = await showDialog('Delete this item?', 'Confirm', ['Delete', 'Cancel']);
+ * if (result === 'Delete') {
+ *   // User clicked Delete
+ * }
+ */
+export function showDialog(text, title = 'Dialog', options = null) {
+  // Create container element
+  const container = document.createElement('div')
+  document.body.appendChild(container)
+
+  // Function to clean up dialog
+  const cleanup = () => {
+    // First unmount the component
+    render(null, container)
+    // Then remove the container
+    if (container && container.parentNode) {
+      document.body.removeChild(container)
+    }
+  }
+
+  // If options are provided, return a Promise
+  if (options && Array.isArray(options) && options.length > 0) {
+    return new Promise((resolve) => {
+      const handleClose = (selectedOption) => {
+        cleanup()
+        resolve(selectedOption)
+      }
+
+      render(
+        html`<${Dialog}
+          text=${text}
+          title=${title}
+          options=${options}
+          onClose=${handleClose}
+        />`,
+        container,
+      )
+    })
+  } else {
+    // Backward compatibility - no return value
+    const handleClose = () => {
+      cleanup()
+    }
+
+    render(
+      html`<${Dialog} text=${text} title=${title} onClose=${handleClose} />`,
+      container,
+    )
+
+    return undefined
+  }
+}
+
+/**
+ * Displays a text prompt dialog with an input field.
+ *
+ * @param {string} title - The title to display in the dialog header
+ * @param {string} [initialValue=''] - Initial value for the text input
+ * @param {string} [placeholder=''] - Placeholder text for the input field
+ *
+ * @returns {Promise<string|null>} - Promise that resolves with the input value on confirm, or null on cancel
+ *
+ * @example
+ * const folderName = await showTextPrompt('Enter folder name', '', 'My Folder');
+ * if (folderName) {
+ *   // User confirmed with folderName
+ * } else {
+ *   // User cancelled
+ * }
+ */
+/**
+ * Displays a number prompt dialog with a numeric input field.
+ *
+ * @param {string} title - The title to display in the dialog header
+ * @param {number} [initialValue=0] - Initial numeric value for the input
+ * @param {number} [min] - Optional minimum value for the input
+ *
+ * @returns {Promise<number|null>} - Promise that resolves with the entered number on confirm, or null on cancel
+ *
+ * @example
+ * const duration = await showNumberPrompt('Recording Duration (seconds)', 30, 1);
+ * if (duration !== null) startRecording(duration);
+ */
+export function showNumberPrompt(title, initialValue = 0, min = undefined) {
+  const container = document.createElement('div')
+  document.body.appendChild(container)
+
+  const cleanup = () => {
+    render(null, container)
+    if (container && container.parentNode) {
+      document.body.removeChild(container)
+    }
+  }
+
+  return new Promise((resolve) => {
+    const handleConfirm = (value) => {
+      cleanup()
+      const num = Number(value)
+      resolve(isNaN(num) ? null : num)
+    }
+
+    const handleCancel = () => {
+      cleanup()
+      resolve(null)
+    }
+
+    render(
+      html`<${TextPromptDialog}
+        title=${title}
+        initialValue=${String(initialValue)}
+        type="number"
+        min=${min}
+        onConfirm=${handleConfirm}
+        onCancel=${handleCancel}
+      />`,
+      container,
+    )
+  })
+}
+
+export function showTextPrompt(title, initialValue = '', placeholder = '') {
+  // Create container element
+  const container = document.createElement('div')
+  document.body.appendChild(container)
+
+  // Function to clean up dialog
+  const cleanup = () => {
+    // First unmount the component
+    render(null, container)
+    // Then remove the container
+    if (container && container.parentNode) {
+      document.body.removeChild(container)
+    }
+  }
+
+  return new Promise((resolve) => {
+    const handleConfirm = (value) => {
+      cleanup()
+      resolve(value)
+    }
+
+    const handleCancel = () => {
+      cleanup()
+      resolve(null)
+    }
+
+    render(
+      html`<${TextPromptDialog}
+        title=${title}
+        initialValue=${initialValue}
+        placeholder=${placeholder}
+        onConfirm=${handleConfirm}
+        onCancel=${handleCancel}
+      />`,
+      container,
+    )
+  })
+}

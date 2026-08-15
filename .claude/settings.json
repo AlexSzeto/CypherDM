@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$j = [Console]::In.ReadToEnd() | ConvertFrom-Json; $f = $j.tool_input.file_path; if ($f) { npx prettier --write --ignore-unknown \"$f\" }; exit 0",
+            "shell": "powershell",
+            "statusMessage": "Formatting..."
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(npx vitest *)",
+      "PowerShell(npx vitest run)",
+      "PowerShell(npx vitest run *)",
+      "Bash(node scripts/move-feature.mjs *)",
+      "PowerShell(node scripts/move-feature.mjs *)",
+      "Bash(git mv *)"
+    ]
+  }
+}

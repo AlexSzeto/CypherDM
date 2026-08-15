@@ -1,0 +1,48 @@
+{
+  "name": "cypher-dm",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "server/server.mjs",
+  "scripts": {
+    "start": "node server/server.mjs",
+    "start:pm2": "pm2 start server/server.mjs --name cypher-dm --attach",
+    "restart:pm2": "pm2 restart cypher-dm",
+    "stop:pm2": "pm2 stop cypher-dm",
+    "logs:pm2": "pm2 logs cypher-dm",
+    "pull": "node public/js/custom-ui/lib-sync.mjs pull",
+    "push": "node public/js/custom-ui/lib-sync.mjs push",
+    "sync:codex-skills": "node scripts/sync-codex-skills.mjs",
+    "sync:antigravity-skills": "node scripts/sync-antigravity-skills.mjs",
+    "libs": "node scripts/download-libs.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "kanban": "kanban-lite serve --no-browser",
+    "format": "prettier --write ."
+  },
+  "author": "",
+  "license": "AGPL-3.0-only",
+  "description": "Cypher System web companion — synchronized character sheets and DM dashboard",
+  "dependencies": {
+    "ajv": "^8.20.0",
+    "express": "^5.1.0",
+    "goober": "^2.1.18"
+  },
+  "devDependencies": {
+    "@testing-library/preact": "^3.2.4",
+    "@vitest/coverage-v8": "^4.1.7",
+    "happy-dom": "^20.9.0",
+    "htm": "^3.1.1",
+    "kanban-lite": "^1.2.22",
+    "pm2": "^7.0.1",
+    "preact": "^10.29.2",
+    "prettier": "3.9.3",
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.7"
+  },
+  "overrides": {
+    "pm2": {
+      "js-yaml": "^4.1.2",
+      "ws": "^8.21.0"
+    }
+  }
+}

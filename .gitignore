@@ -1,0 +1,20 @@
+node_modules/
+server/logs/
+server/temp/
+server/storage/
+server/database/
+server/config.json
+runtime/
+scripts/migrate/backups/
+.codex
+.agents
+.kanban-serve.log
+
+# Kanban Lite runtime files (user-specific state, not board data)
+.kanban/card-state/
+.kanban/.active-card.json
+.kanban/boards/features/**/attachments/*.log
+
+# Local reference material (cloned repos for development research)
+scratch/
+reference/
