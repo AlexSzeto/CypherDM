@@ -1,17 +1,18 @@
 ---
 version: 1
 id: 'retire-custom-ui-library-sync'
-boardId: 'features'
-status: 'in-progress'
+status: 'done'
 priority: 'medium'
 assignee: null
 dueDate: null
 created: '2026-08-15T07:35:45.480Z'
-modified: '2026-08-15T08:28:36.654Z'
+modified: '2026-08-15T08:30:44.967Z'
 completedAt: null
-labels: ['polish']
-attachments: []
-order: 'a0V'
+labels:
+  - 'polish'
+attachments:
+  - 'retire-custom-ui-library-sync.log'
+order: 'Zx'
 metadata:
   feature: 'project-imported-code-cleanup'
 ---

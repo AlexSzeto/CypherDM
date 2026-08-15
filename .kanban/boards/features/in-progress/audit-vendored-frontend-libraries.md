@@ -2,16 +2,16 @@
 version: 1
 id: 'audit-vendored-frontend-libraries'
 boardId: 'features'
-status: 'groomed'
+status: 'in-progress'
 priority: 'medium'
 assignee: null
 dueDate: null
 created: '2026-08-15T07:35:45.480Z'
-modified: '2026-08-15T07:42:10.000Z'
+modified: '2026-08-15T08:31:28.424Z'
 completedAt: null
 labels: ['polish']
 attachments: []
-order: 'a3'
+order: 'a0V'
 metadata:
   feature: 'project-imported-code-cleanup'
 ---
@@ -26,7 +26,7 @@ Make the vendored-library manifest match what the app actually loads, so `npm ru
 
 ### Phase 1 — Manifest matches what the app loads
 
-- [ ] Complete initial implementation
+- [x] Complete initial implementation
   - In `scripts/lib.config.json`, delete the `libraries` entry whose `url` is `https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js` and whose `path` is `autocomplete/autoComplete.min.js`. The file is absent from `public/lib/`, no page references it, and `custom-ui/io/use-autocomplete.mjs` plus `custom-ui/io/autocomplete-dropdown.mjs` implement autocomplete natively.
   - Determine whether `favloader` is used. Search `public/js/` and `public/index.html` for `favloader`, `favLoader`, and `Favloader`. As of grooming, the only hit is the `<script src="/lib/favloader/favloader.js"></script>` tag in `public/index.html` — it exposes a global and nothing calls it. If that still holds, delete both the script tag from `public/index.html` and the `favloader` entry from `scripts/lib.config.json`, and delete the vendored `public/lib/favloader/favloader.js`. If a caller is found, leave all three in place and note the caller in a comment on the card.
   - Do **not** remove `boxicons`. It looks unused from `public/js/app.mjs`, but `public/js/custom-ui/layout/icon.mjs` renders either box-icons or Material Symbols depending on theme configuration, so the global from `public/lib/boxicons/boxicons.js` is a live dependency of the shared component library. Leave its `lib.config.json` entry, its vendored file, and its `<script>` tag in `public/index.html` alone.
