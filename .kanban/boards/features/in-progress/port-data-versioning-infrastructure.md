@@ -2,16 +2,16 @@
 version: 1
 id: 'port-data-versioning-infrastructure'
 boardId: 'features'
-status: 'groomed'
+status: 'in-progress'
 priority: 'high'
 assignee: null
 dueDate: null
 created: '2026-08-15T07:55:00.000Z'
-modified: '2026-08-15T07:55:00.000Z'
+modified: '2026-08-15T08:06:28.366Z'
 completedAt: null
 labels: ['story']
 attachments: []
-order: 'a4'
+order: 'a0V'
 metadata:
   feature: 'project-imported-code-cleanup'
 ---
@@ -26,7 +26,7 @@ Bring the schema sanitizer, version registry, and migration runner into `server/
 
 ### Phase 1 — Sanitizer available and tested
 
-- [ ] Complete initial implementation
+- [x] Complete initial implementation
   - Copy `scratch/sanitizer.mjs` to `server/core/sanitizer.mjs` unchanged except for the logging fix below. It has no coupling to the previous project — it imports only `ajv` and exports `sanitize(data, schema)` (recursive default-filling) and `validate(data, schema)` (permissive Ajv check returning `{ valid, errors }`).
   - In the copied `server/core/sanitizer.mjs`, replace both `console.warn` calls (one in `sanitizeWithRoot`'s unknown-field loop, one in `validate`'s error loop) with `log('sanitizer', 'warn', ...)`, importing `log` from `./logger.mjs`. `.claude/rules/server.md` forbids direct `console.*` calls. Preserve the `STRICT_VALIDATION_WARNINGS` export and the fact that both loops are gated behind it.
   - Copy `scratch/sanitizer.test.mjs` to `server/core/sanitizer.test.mjs` unchanged. Its `flatSchema` and `nestedSchema` fixtures are declared inline and reference no project domain. It covers 14 cases across four groups: flat default-filling, nested `$ref` resolution, arrays of objects, and `validate`.
@@ -34,7 +34,7 @@ Bring the schema sanitizer, version registry, and migration runner into `server/
 
 ### Phase 2 — Version registry and migrator ported and unit-tested
 
-- [ ] Complete initial implementation
+- [x] Complete initial implementation
   - Add `BACKUP_DIR` to `server/core/paths.mjs`, resolving to `scripts/migrate/backups/` under `PROJECT_ROOT` — i.e. `path.join(PROJECT_ROOT, 'scripts', 'migrate', 'backups')`. `migrator.mjs` imports it for `writeBackup`. Note that `.gitignore` already ignores this directory and must keep doing so.
   - Copy `scratch/data-versions.mjs` to `server/core/data-versions.mjs`, then replace the `DATA_DOMAINS` object wholesale. The old registry lists eight domains from the previous project (`anytale-data`, `media-data`, `brew-data`, `sound-sources`, `workflows`, `tales-data`, `model-registry`, `config`); the new one has exactly one entry: `config: { currentVersion: 1, filePath: CONFIG_PATH }`. Drop the now-unused `DATABASE_DIR`, `WORKFLOWS_PATH`, and `RESOURCE_DIR` imports — `WORKFLOWS_PATH` does not exist in this project's `paths.mjs` and would be an import error. Keep `getCurrentVersion(domain)` as-is.
   - Delete `getLowestMigrationVersion` from `server/core/data-versions.mjs`, and delete `migrateDataObject` from `server/core/migrator.mjs`. Both exist solely to migrate an in-memory bundle during an import feature that CypherDM does not have and that `docs/cypher-system-design-spec.md` does not describe. Removing them also removes the only reason `data-versions.mjs` needs `fs`, `path`, and `pathToFileURL`. See "Dropped on purpose" below for how to restore them.
@@ -47,7 +47,7 @@ Bring the schema sanitizer, version registry, and migration runner into `server/
 
 ### Phase 3 — Migrations run on startup and config is versioned
 
-- [ ] Complete initial implementation
+- [x] Complete initial implementation
   - Write `server/core/migrator.test.mjs` from scratch. Do **not** port `scratch/migrator.test.mjs`: its `describe('migrator')` block imports `./migrator.mjs`, discards the import, and re-implements the whole algorithm inline against temp directories, so its eight tests pass even if the module is deleted. Use the Phase 2 injection points to point the real `migrateAll` at an `fs.mkdtempSync` directory instead. Cover: no-op when `data.version` already equals the target; no-op when the file has no `version` field and the target is 0; a single-step migration writing the new version; a multi-step chain applying in order; a throw naming "Please update the server to the latest version" when data version exceeds target; a throw naming "No migration path found" on a chain gap; a backup file created before migrating; and the original file restored plus a throw naming "Original data restored from backup" when a step throws.
   - Add `server/resource/schemas/config.schema.json` — a JSON Schema draft-07 document for the config object with `serverPort` (`type: 'number'`, `default: 5000`) and `version` (`type: 'number'`). `.claude/rules/server.md` requires a schema file for every persisted domain, and this gives `sanitize()` its first real caller.
   - In `server/core/config.mjs`'s `loadConfig()`, call `sanitize(parsed, configSchema)` on the parsed config before returning it, importing the schema with `fs.readFileSync` + `JSON.parse` from `RESOURCE_DIR`. This fills any missing field from the schema default rather than relying on `config.default.json` having been copied.

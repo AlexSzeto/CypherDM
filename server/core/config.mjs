@@ -4,7 +4,9 @@
  * and exposes the resulting object.
  */
 import fs from 'fs'
-import { CONFIG_PATH, DEFAULT_CONFIG_PATH } from './paths.mjs'
+import path from 'path'
+import { CONFIG_PATH, DEFAULT_CONFIG_PATH, RESOURCE_DIR } from './paths.mjs'
+import { sanitize } from './sanitizer.mjs'
 import { log } from './logger.mjs'
 
 let _config = null
@@ -24,7 +26,10 @@ export function loadConfig() {
     }
   }
 
-  _config = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'))
+  const schemaPath = path.join(RESOURCE_DIR, 'schemas', 'config.schema.json')
+  const configSchema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'))
+  const parsed = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'))
+  _config = sanitize(parsed, configSchema)
   return _config
 }
 
