@@ -1,17 +1,18 @@
 ---
 version: 1
 id: 'remove-leftover-server-rules'
-boardId: 'features'
-status: 'in-progress'
+status: 'done'
 priority: 'medium'
 assignee: null
 dueDate: null
 created: '2026-08-15T07:35:45.480Z'
-modified: '2026-08-15T08:25:58.019Z'
+modified: '2026-08-15T08:27:42.105Z'
 completedAt: null
-labels: ['polish']
-attachments: []
-order: 'a0V'
+labels:
+  - 'polish'
+attachments:
+  - 'remove-leftover-server-rules.log'
+order: 'Zy'
 metadata:
   feature: 'project-imported-code-cleanup'
 ---

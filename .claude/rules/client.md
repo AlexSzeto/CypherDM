@@ -78,6 +78,17 @@ description: when working on the client facing (i.e. /public) side of the websit
   - **Reusable Components**: Place generic, reusable UI components in `public/js/custom-ui/` (e.g., `io/`, `layout/`, `msg/`).
   - **App-Specific Logic**: Place application-specific components and logic in `public/js/app-ui/`.
   - **Utility Functions**: Generic utilities go in `public/js/custom-ui/util.mjs`.
+
+### The custom-ui library is shared and frozen
+
+- `public/js/custom-ui/` is shared-library code mirrored from a central repository — it is not owned by this project.
+- `lib-sync.mjs` must never be run in either direction, because both `push` and `pull` are destructive mirrors:
+  - `push` overwrites the central repository with local content and deletes files present upstream but absent locally (propagating local prunes outward to all other library consumers).
+  - `pull` overwrites the local directory with upstream content and deletes local files absent upstream (silently reverting local edits to `custom-ui/`).
+- The `pull` and `push` npm scripts were removed for exactly this reason; their absence is deliberate, not an oversight.
+- Unused components under `custom-ui/` are normal for a shared library and must **never** be treated as cleanup targets. Components are added to and removed from `custom-ui/` only through the future library system, never by editing this repo.
+- A future library system will supply the proper way to reset and re-sync the folder; until then, the folder is frozen.
+
 - **Navigation Registration**: Every new page must be registered in `public/js/app-ui/hamburger-menu.mjs` as part of the same task that creates it. Do not ship a page without a navigation entry.
 
 ## Component Implementation Standards

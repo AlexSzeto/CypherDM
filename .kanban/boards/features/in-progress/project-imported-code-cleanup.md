@@ -24,7 +24,7 @@ CypherDM's scaffold was lifted wholesale from AnyTale, so it ships with working 
 
 - [x] `port-data-versioning-infrastructure.md` — Port Data Versioning And Sanitization Infrastructure
 - [x] `remove-orphaned-sse-system.md` — Remove Orphaned SSE System
-- [ ] `remove-leftover-server-rules.md` — Remove Leftover Server Rules
+- [x] `remove-leftover-server-rules.md` — Remove Leftover Server Rules
 - [ ] `retire-custom-ui-library-sync.md` — Retire The custom-ui Library Sync
 - [ ] `audit-vendored-frontend-libraries.md` — Audit Vendored Front-End Libraries
 

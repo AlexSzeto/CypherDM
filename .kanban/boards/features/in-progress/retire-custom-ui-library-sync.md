@@ -2,16 +2,16 @@
 version: 1
 id: 'retire-custom-ui-library-sync'
 boardId: 'features'
-status: 'groomed'
+status: 'in-progress'
 priority: 'medium'
 assignee: null
 dueDate: null
 created: '2026-08-15T07:35:45.480Z'
-modified: '2026-08-15T07:42:10.000Z'
+modified: '2026-08-15T08:28:36.654Z'
 completedAt: null
 labels: ['polish']
 attachments: []
-order: 'a2'
+order: 'a0V'
 metadata:
   feature: 'project-imported-code-cleanup'
 ---
@@ -26,7 +26,7 @@ Take the `custom-ui` push/pull sync out of reach and document why, so nobody run
 
 ### Phase 1 — Sync unreachable and the freeze documented
 
-- [ ] Complete initial implementation
+- [x] Complete initial implementation
   - In `package.json`, delete the `"pull"` and `"push"` entries from `scripts` — currently `"pull": "node public/js/custom-ui/lib-sync.mjs pull"` (line 12) and `"push": "node public/js/custom-ui/lib-sync.mjs push"` (line 13). Leave every other script entry unchanged, including `"libs"`, `"sync:codex-skills"`, and `"sync:antigravity-skills"`.
   - Do **not** delete or edit `public/js/custom-ui/lib-sync.mjs` or `public/js/custom-ui/config.json`. Both live inside `custom-ui/`, which this feature treats as out of scope for edits. They remain as dead code with no invocation path.
   - Add a subsection to `.claude/rules/client.md` headed `### The custom-ui library is shared and frozen`, placed immediately after the `- **File Structure**:` bullet list under `## Frontend Architecture` (the list whose first item is `**Reusable Components**: Place generic, reusable UI components in public/js/custom-ui/`). Content requirements are listed under "What the documentation must say" below.
