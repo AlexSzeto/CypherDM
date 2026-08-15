@@ -9,7 +9,7 @@
  * // Single-select
  * <${SearchSelectModal}
  *   isOpen=${true}
- *   title="Select a Plot"
+ *   title="Select a Character"
  *   items=${['Alpha', 'Beta', 'Gamma']}
  *   mode="single"
  *   onSelect=${(value) => console.log('Selected:', value)}
@@ -32,7 +32,7 @@
  * // Single-select with per-item action buttons
  * <${SearchSelectModal}
  *   isOpen=${true}
- *   title="Select a Plot"
+ *   title="Select a Character"
  *   items=${['Alpha', 'Beta']}
  *   mode="single"
  *   itemActions=${[

@@ -129,19 +129,16 @@ Append as the final nested bullet of the last phase:
 
 Mapping ticket scope to affected docs:
 
-| Ticket touches…                             | Likely affected docs            |
-| ------------------------------------------- | ------------------------------- |
-| AnyTale (characters, parts, plots, outfits) | `docs/features/anytale.md`      |
-| Ambient brew / sound sources                | `docs/features/ambient-brew.md` |
-| Main gallery, generation form, inpaint      | `docs/features/main-gallery.md` |
-| ComfyUI workflow config, pre/post tasks     | `docs/workflow.md`              |
-| New or changed API endpoints                | `docs/server.md`                |
-| New `custom-ui` components                  | `docs/components.md`            |
-| New pages (changes to `hamburger-menu.mjs`) | `docs/scaffolding.md`           |
-| Backend architecture, new feature domains   | `docs/architecture.md`          |
-| Client-side patterns, component strategy    | `.claude/rules/client.md`       |
-| Server-side patterns, domain structure      | `.claude/rules/server.md`       |
-| Project management, board, card format      | `.claude/rules/planning.md`     |
+| Ticket touches…                              | Likely affected docs                |
+| -------------------------------------------- | ----------------------------------- |
+| A named app section or feature area          | `docs/features/<section>.md`        |
+| Cypher System rules, stats, or game concepts | `docs/cypher-system-design-spec.md` |
+| New or changed API endpoints                 | `docs/server.md`                    |
+| New `custom-ui` components                   | `docs/components.md`                |
+| Backend architecture, new feature domains    | `docs/architecture.md`              |
+| Client-side patterns, component strategy     | `.claude/rules/client.md`           |
+| Server-side patterns, domain structure       | `.claude/rules/server.md`           |
+| Project management, board, card format       | `.claude/rules/planning.md`         |
 
 If the ticket is a pure bug fix that changes no documented behavior, the docs-review bullet may state that no docs are affected — but include the bullet so the check is explicit.
 
@@ -169,7 +166,7 @@ export function migrate(data) {
 }
 ```
 
-`migrate(data)` must be idempotent and guarded — safe to run twice against its own output with the second run a no-op (gate destructive renames/moves on the absence of the destination field; use `??`/`!Array.isArray(x)`/`x === undefined` guards for default-fills). This matters because `migrateDataObject` (`server/core/migrator.mjs`) runs migrations in-memory against arbitrary source versions during AnyTale library/tale import, not only as a startup chain — see `docs/architecture.md`'s Data Versioning section.
+`migrate(data)` must be idempotent and guarded — safe to run twice against its own output with the second run a no-op (gate destructive renames/moves on the absence of the destination field; use `??`/`!Array.isArray(x)`/`x === undefined` guards for default-fills). This matters because `migrateDataObject` (`server/core/migrator.mjs`) runs migrations in-memory against arbitrary source versions when importing an externally-supplied data bundle, not only as a startup chain.
 
 If the fix adds or changes a domain's write path, its single write function should stamp `data.version = getCurrentVersion(domain)` before writing, so a freshly created file is never mistaken for version `0` on the next restart.
 

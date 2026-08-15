@@ -442,10 +442,10 @@
                 hoverPanel.show(
                   html`
                     <div>
-                      <strong>Tag: 1girl</strong>
+                      <strong>Descriptor: Stealthy</strong>
                       <p style="margin: 8px 0 0 0;">
-                        An image depicting one female character. Dolls only
-                        count if they act on their own.
+                        +2 to your Speed Pool, and you are trained in stealth
+                        and initiative tasks.
                       </p>
                     </div>
                   `,
@@ -1002,7 +1002,7 @@ multi:    ${multiTemplate}</pre>
       // ── ContentEditablePillInput demo ─────────────────────────────────────────
 
       function ContentEditablePillInputDemo() {
-        const [values, setValues] = useState(['blue_eyes', 'long hair'])
+        const [values, setValues] = useState(['stealthy', 'quick reflexes'])
         const [multiValues, setMultiValues] = useState([
           'apple',
           '\n',
@@ -1021,7 +1021,7 @@ multi:    ${multiTemplate}</pre>
                 label="Tags"
                 values=${values}
                 onValuesChange=${setValues}
-                suggestions=${['blue_eyes', 'red_eyes', 'long hair', 'short hair', 'white shirt', 'black shirt', 'smile', 'looking at viewer']}
+                suggestions=${['stealthy', 'charming', 'quick reflexes', 'tough', 'graceful', 'strong', 'clever', 'mechanical']}
                 placeholder="Type to add tags..."
               />
               <pre
@@ -1068,7 +1068,7 @@ values: ${JSON.stringify(multiValues)}</pre>
                 label="Clickable pills"
                 values=${values}
                 onValuesChange=${setValues}
-                suggestions=${['blue_eyes', 'red_eyes', 'long hair', 'short hair']}
+                suggestions=${['stealthy', 'charming', 'quick reflexes', 'tough']}
                 placeholder="Type tags..."
                 onPillClick=${(v) => alert('pill clicked: ' + v)}
               />
@@ -1082,7 +1082,7 @@ values: ${JSON.stringify(multiValues)}</pre>
                 label="Tags with button"
                 values=${values}
                 onValuesChange=${setValues}
-                suggestions=${['blue_eyes', 'red_eyes', 'long hair', 'short hair']}
+                suggestions=${['stealthy', 'charming', 'quick reflexes', 'tough']}
                 placeholder="Type tags..."
                 onPillClick=${(v) => alert('pill clicked: ' + v)}
                 buttonProps=${{ icon: 'search', title: 'Browse', onClick: () => alert('button clicked') }}
@@ -1092,16 +1092,17 @@ values: ${JSON.stringify(multiValues)}</pre>
               </p>
               <${ContentEditablePillInput}
                 label="Tags with tooltips"
-                values=${['blue_eyes', 'long hair']}
+                values=${['stealthy', 'quick reflexes']}
                 onValuesChange=${() => {}}
-                suggestions=${['blue_eyes', 'red_eyes', 'long hair', 'short hair']}
+                suggestions=${['stealthy', 'charming', 'quick reflexes', 'tough']}
                 placeholder="Type tags..."
                 getPillTooltip=${(v) => {
                   const defs = {
-                    blue_eyes: 'Character has blue-coloured irises',
-                    long_hair: 'Hair extending past the shoulders',
-                    'long hair': 'Hair extending past the shoulders',
-                    red_eyes: 'Character has red-coloured irises',
+                    stealthy: 'Descriptor: +2 to your Speed Pool',
+                    quick_reflexes: 'Descriptor: training in initiative tasks',
+                    'quick reflexes':
+                      'Descriptor: training in initiative tasks',
+                    charming: 'Descriptor: training in pleasant interaction',
                   }
                   return defs[v] ?? null
                 }}

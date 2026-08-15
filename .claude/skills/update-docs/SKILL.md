@@ -11,26 +11,25 @@ You are a documentation reviewer. Your job is to read the current state of the c
 
 The skill may be invoked with:
 
-- **A description of recent changes** (e.g. "just finished the anytale voice generation feature") — use this to focus the review on likely-affected docs first.
+- **A description of recent changes** (e.g. "just finished the character sheet stat pool tracker") — use this to focus the review on likely-affected docs first.
 - **No argument** — perform a broad audit of all living docs against the current codebase state.
 
 ## Living docs
 
 Review all of the following:
 
-| Doc                             | Covers                                                                          |
-| ------------------------------- | ------------------------------------------------------------------------------- |
-| `docs/architecture.md`          | Frontend/backend architecture, component layers, data flow, directory structure |
-| `docs/components.md`            | `custom-ui` component library API and props                                     |
-| `docs/server.md`                | All API endpoints, request/response shapes, SSE events                          |
-| `docs/workflow.md`              | ComfyUI workflow config format, replacement/task/condition structures           |
-| `docs/features/anytale.md`      | AnyTale user flow, components, endpoints, data shapes                           |
-| `docs/features/main-gallery.md` | Main gallery, generation form, inpaint flow                                     |
-| `docs/features/ambient-brew.md` | Ambient brew editor, sound sources, playback/recording                          |
-| `docs/scaffolding.md`           | Scaffold script behaviour, what gets copied, empty dirs, post-scaffold steps    |
-| `.claude/rules/client.md`       | Frontend architecture rules, component strategy, styling conventions            |
-| `.claude/rules/server.md`       | Backend architecture rules, domain structure, data management                   |
-| `.claude/rules/planning.md`     | Project management structure, skill lifecycle, feature file format              |
+| Doc                                 | Covers                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------- |
+| `docs/cypher-system-design-spec.md` | Cypher System functional requirements — the project's authoritative spec        |
+| `docs/architecture.md`              | Frontend/backend architecture, component layers, data flow, directory structure |
+| `docs/components.md`                | `custom-ui` component library API and props                                     |
+| `docs/server.md`                    | All API endpoints, request/response shapes, SSE events                          |
+| `docs/features/<section>.md`        | Per-feature-area user flow, components, endpoints, data shapes                  |
+| `.claude/rules/client.md`           | Frontend architecture rules, component strategy, styling conventions            |
+| `.claude/rules/server.md`           | Backend architecture rules, domain structure, data management                   |
+| `.claude/rules/planning.md`         | Project management structure, skill lifecycle, feature file format              |
+
+Not every doc in this list exists yet — the project writes them as the corresponding area takes shape. Skip any that are absent rather than treating the gap as a finding; the one exception is a doc the just-completed work clearly warranted, which is worth proposing as a new file.
 
 If a description of recent changes was provided, prioritize the docs most likely affected by those changes. Still review the others, but do them after.
 
@@ -39,7 +38,7 @@ If a description of recent changes was provided, prioritize the docs most likely
 For each doc:
 
 1. **Read the doc.**
-2. **Read the relevant source files** to verify the doc's claims. For feature docs, read the actual component and server files. For `server.md`, check the routers. For `components.md`, check `public/js/custom-ui/`. For `workflow.md`, check `server/features/generation/workflow-validator.mjs` typedefs and `server/resource/comfyui-workflows.json` structure.
+2. **Read the relevant source files** to verify the doc's claims. For feature docs, read the actual component and server files. For `server.md`, check the routers in `server/features/*/router.mjs`. For `components.md`, check `public/js/custom-ui/`.
 3. **Identify stale or missing content.** Look for:
    - Endpoints, components, or data shapes that no longer exist or have changed
    - New endpoints, components, or patterns not yet documented

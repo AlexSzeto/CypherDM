@@ -21,7 +21,7 @@ export const ProgressContext = createContext(null)
  * @param {preact.ComponentChildren} props.children - App content wrapped by provider (required)
  * @param {boolean} [props.hideBanners=false] - When true, suppresses ProgressBanner portal rendering
  *   while keeping all task subscriptions and callbacks intact. Use in contexts that provide their
- *   own progress UI (e.g. AnyTale play mode).
+ *   own progress UI.
  * @returns {preact.VNode}
  */
 export function ProgressProvider({ children, hideBanners = false }) {
@@ -185,7 +185,7 @@ export function ProgressProvider({ children, hideBanners = false }) {
  * hide('task-123');
  *
  * // Check active tasks
- * const portrait = activeTasks.find(t => t.entityType === 'anytale-render-portrait');
+ * const pending = activeTasks.find(t => t.entityType === 'character-import');
  */
 const NOOP_CONTEXT = {
   activeTasks: [],

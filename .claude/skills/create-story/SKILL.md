@@ -23,7 +23,7 @@ A **story** is a single unit of work (a UX story, an enhancement, an idea). It i
 4. **Assign priority, category, and lane.** Ask the user (one message, all three questions): _"What priority is this story — high, medium, or low? Which category — `story` (substantial unit of work), `polish` (small usability/visual win), `idea` (uncommitted brainstorm), `blocker` (breaking bug), or `defect` (non-breaking bug)? And should it go to the **Backlog** or **Planned** lane?"_ Suggest `idea` as the default category when the request reads like a brainstorm, and Backlog as the default lane. If an active feature was found in step 3, mention it: _"Planned will link it to the active feature `<feature-id>`."_ Wait for their answer before writing the file.
 
 5. **Write the card.** If creating a new file:
-   - Derive a kebab-case slug from the story name (e.g. `outfit-preview-images`).
+   - Derive a kebab-case slug from the story name (e.g. `character-sheet-stat-pools`).
    - Write to `.kanban/boards/features/<lane>/<slug>.md` (where `<lane>` is `backlog` or `planned`, per the user's choice) with YAML frontmatter followed by the markdown body — the `status` field must match the chosen lane:
 
 ```markdown

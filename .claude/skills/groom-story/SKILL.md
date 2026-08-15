@@ -148,9 +148,9 @@ Each phase will be handed off to a cold subagent with no memory of prior phases 
 
 - **File references**: Name the exact file path and, where relevant, the specific function, class, or render section to change (e.g. "in `character-section.mjs`, inside the `renderAttributes()` loop"). Never assume the implementer knows the codebase layout.
 - **API ownership**: When two components share a boundary, state explicitly which side owns each behavior (e.g. "ContentEditablePillInput implements click delegation internally; callers receive the result via `onPillClick` prop — TagInput does not wire this itself").
-- **Term definitions**: Any domain-specific term used in a task (e.g. "trailing text", "browse-only mode", "definition panel") must be defined in the Implementation Details section. Never use project jargon in a task without a corresponding definition there.
+- **Term definitions**: Any domain-specific term used in a task (e.g. "stat pool", "effort tier", "browse-only mode") must be defined in the Implementation Details section. Never use project jargon in a task without a corresponding definition there.
 - **Multi-file tasks**: If a task touches more than one file, list every affected file explicitly — never write "and related files" or "all callers".
-- **Review/update tasks**: Tasks that say "review and update" a doc must name the specific sections to change and state what constitutes done (e.g. "add a `buttonProps` row to the Input component table; remove the deprecated `onReplace` row from the TagSelectorPanel table").
+- **Review/update tasks**: Tasks that say "review and update" a doc must name the specific sections to change and state what constitutes done (e.g. "add a `buttonProps` row to the Input component table; remove the deprecated `onReplace` row from the Select component table").
 - **Breaking changes**: If a task removes or renames a public prop or exported function, state the old name, the new name or replacement, and list every caller file that needs updating.
 - **Test tasks**: Specify what to assert, not just "add a test" (e.g. "assert that clicking the icon button fires `onClick` but does not toggle the dropdown open state").
 
@@ -164,23 +164,20 @@ Every generated task list must end with a docs-review bullet nested under the fi
 
 **Mapping story scope → affected docs:**
 
-| Story touches…                              | Likely affected docs            |
-| ------------------------------------------- | ------------------------------- |
-| AnyTale (characters, parts, plots, outfits) | `docs/features/anytale.md`      |
-| Ambient brew / sound sources                | `docs/features/ambient-brew.md` |
-| Main gallery, generation form, inpaint      | `docs/features/main-gallery.md` |
-| ComfyUI workflow config, pre/post tasks     | `docs/workflow.md`              |
-| New or changed API endpoints                | `docs/server.md`                |
-| New `custom-ui` components                  | `docs/components.md`            |
-| New pages (changes to `hamburger-menu.mjs`) | `docs/scaffolding.md`           |
-| Backend architecture, new feature domains   | `docs/architecture.md`          |
-| Client-side patterns, component strategy    | `.claude/rules/client.md`       |
-| Server-side patterns, domain structure      | `.claude/rules/server.md`       |
-| Project management, board, card format      | `.claude/rules/planning.md`     |
+| Story touches…                               | Likely affected docs                |
+| -------------------------------------------- | ----------------------------------- |
+| A named app section or feature area          | `docs/features/<section>.md`        |
+| Cypher System rules, stats, or game concepts | `docs/cypher-system-design-spec.md` |
+| New or changed API endpoints                 | `docs/server.md`                    |
+| New `custom-ui` components                   | `docs/components.md`                |
+| Backend architecture, new feature domains    | `docs/architecture.md`              |
+| Client-side patterns, component strategy     | `.claude/rules/client.md`           |
+| Server-side patterns, domain structure       | `.claude/rules/server.md`           |
+| Project management, board, card format       | `.claude/rules/planning.md`         |
 
 A story may affect multiple docs — list all that apply. When in doubt, err toward listing more rather than fewer.
 
-**Feature doc creation:** If the story touches a named app section (anytale, brew, main/inpaint/workflow-editor) and that section's `docs/features/<section>.md` file does not yet exist, add a bullet before the docs-review bullet to create it:
+**Feature doc creation:** If the story touches a named app section and that section's `docs/features/<section>.md` file does not yet exist, add a bullet before the docs-review bullet to create it:
 
 ```
   - Create `docs/features/<section>.md` documenting the user flow, component interactions, server endpoints, and key data shapes for the <section> feature area
@@ -188,7 +185,7 @@ A story may affect multiple docs — list all that apply. When in doubt, err tow
 
 ## Data Migration Tasks
 
-If a story changes the schema of any tracked data file (`server/config.json`, `server/database/anytale-data.json`, `server/database/tales-data.json`, `server/database/media-data.json`, `server/database/brew-data.json`, `server/database/sound-sources.json` — see `server/core/data-versions.mjs`'s `DATA_DOMAINS` for the authoritative list), the task list **must** include:
+If a story changes the schema of any tracked data file (`server/config.json` or any `server/database/*.json` — see `server/core/data-versions.mjs`'s `DATA_DOMAINS` for the authoritative list), the task list **must** include:
 
 1. A migration script at `scripts/migrate/<domain>/<N>-to-<M>.mjs` (where `<domain>` matches the filename without `.json`, `<N>` is the current version, `<M>` is `<N>+1`).
 2. A bullet to bump `currentVersion` for that domain in `server/core/data-versions.mjs`.
@@ -212,9 +209,9 @@ export function migrate(data) {
 
 The migrator (`server/core/migrator.mjs`) runs all required scripts automatically on server startup, backs up data before migrating, and restores on failure. Migration scripts do **not** set `data.version` — the migrator writes the final version after each step.
 
-**`migrate(data)` must be idempotent and guarded** — safe to run twice in a row against its own output with the second run a no-op. This isn't just a startup-chain concern: `migrateDataObject` (also in `server/core/migrator.mjs`) runs the same scripts in-memory against arbitrary source versions when importing an AnyTale library/tale bundle (see `docs/architecture.md`'s Data Versioning section). Gate destructive renames/moves on the **absence** of the destination field, use `??`/`!Array.isArray(x)`/`x === undefined` guards for default-fill migrations, and verify (don't assume) that value-remap migrations can't re-fire on their own output.
+**`migrate(data)` must be idempotent and guarded** — safe to run twice in a row against its own output with the second run a no-op. This isn't just a startup-chain concern: `migrateDataObject` (also in `server/core/migrator.mjs`) runs the same scripts in-memory against arbitrary source versions when importing an externally-supplied data bundle. Gate destructive renames/moves on the **absence** of the destination field, use `??`/`!Array.isArray(x)`/`x === undefined` guards for default-fill migrations, and verify (don't assume) that value-remap migrations can't re-fire on their own output.
 
-**New data files must be stamped with the current version on creation.** If the story adds or changes a domain's write path, its single write function should set `data.version = getCurrentVersion(domain)` (from `data-versions.mjs`) before writing — otherwise a freshly created file (e.g. from a first save or an import) carries no `"version"` field and gets misread as version `0` on the next server restart, incorrectly replaying the full migration chain. This only applies where the data file is a JSON object; a bare top-level array (like `brew-data`/`sound-sources`) can't carry `.version`.
+**New data files must be stamped with the current version on creation.** If the story adds or changes a domain's write path, its single write function should set `data.version = getCurrentVersion(domain)` (from `data-versions.mjs`) before writing — otherwise a freshly created file (e.g. from a first save or an import) carries no `"version"` field and gets misread as version `0` on the next server restart, incorrectly replaying the full migration chain. This only applies where the data file is a JSON object; a bare top-level array can't carry `.version`.
 
 ## Rules
 

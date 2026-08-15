@@ -106,6 +106,5 @@ Derive it from the summary you just wrote. Keep the title under ~70 characters.
 
 - Do **not** archive a card that is not in `done` — resolve it in Step 3 first.
 - Do **not** archive cards belonging to a different feature, or unaffiliated cards sitting in Done. This skill is scoped to one feature.
-- Do **not** write to `project-management/archived/legacy/`. That directory holds the frozen pre-feature-system archive and takes no new files.
 - Do **not** create the pull request. Output the draft and let the user open it.
-- Do **not** number the summary file. Numbering was the legacy scheme; the completion date orders the new archive.
+- Do **not** number the summary file — the completion date orders the archive.
