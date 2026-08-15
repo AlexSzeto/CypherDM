@@ -9,8 +9,6 @@
     "restart:pm2": "pm2 restart cypher-dm",
     "stop:pm2": "pm2 stop cypher-dm",
     "logs:pm2": "pm2 logs cypher-dm",
-    "pull": "node public/js/custom-ui/lib-sync.mjs pull",
-    "push": "node public/js/custom-ui/lib-sync.mjs push",
     "sync:codex-skills": "node scripts/sync-codex-skills.mjs",
     "sync:antigravity-skills": "node scripts/sync-antigravity-skills.mjs",
     "libs": "node scripts/download-libs.mjs",

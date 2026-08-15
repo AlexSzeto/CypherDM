@@ -43,18 +43,8 @@
       "importMapKey": "goober/prefixer"
     },
     {
-      "url": "https://cdn.jsdelivr.net/npm/@tarekraafat/autocomplete.js@10.2.7/dist/autoComplete.min.js",
-      "path": "autocomplete/autoComplete.min.js",
-      "injectAs": "script"
-    },
-    {
       "url": "https://unpkg.com/boxicons@latest/dist/boxicons.js",
       "path": "boxicons/boxicons.js",
-      "injectAs": "script"
-    },
-    {
-      "url": "https://unpkg.com/favloader",
-      "path": "favloader/favloader.js",
       "injectAs": "script"
     }
   ],

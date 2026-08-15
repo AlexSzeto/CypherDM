@@ -78,6 +78,17 @@ description: when working on the client facing (i.e. /public) side of the websit
   - **Reusable Components**: Place generic, reusable UI components in `public/js/custom-ui/` (e.g., `io/`, `layout/`, `msg/`).
   - **App-Specific Logic**: Place application-specific components and logic in `public/js/app-ui/`.
   - **Utility Functions**: Generic utilities go in `public/js/custom-ui/util.mjs`.
+
+### The custom-ui library is shared and frozen
+
+- `public/js/custom-ui/` is shared-library code mirrored from a central repository — it is not owned by this project.
+- `lib-sync.mjs` must never be run in either direction, because both `push` and `pull` are destructive mirrors:
+  - `push` overwrites the central repository with local content and deletes files present upstream but absent locally (propagating local prunes outward to all other library consumers).
+  - `pull` overwrites the local directory with upstream content and deletes local files absent upstream (silently reverting local edits to `custom-ui/`).
+- The `pull` and `push` npm scripts were removed for exactly this reason; their absence is deliberate, not an oversight.
+- Unused components under `custom-ui/` are normal for a shared library and must **never** be treated as cleanup targets. Components are added to and removed from `custom-ui/` only through the future library system, never by editing this repo.
+- A future library system will supply the proper way to reset and re-sync the folder; until then, the folder is frozen.
+
 - **Navigation Registration**: Every new page must be registered in `public/js/app-ui/hamburger-menu.mjs` as part of the same task that creates it. Do not ship a page without a navigation entry.
 
 ## Component Implementation Standards
@@ -131,17 +142,6 @@ log('source', 'error', 'message')
 - `warn` and `error` messages always emit.
 - Output format is `[source] message`.
 - Do not call `console.log`, `console.warn`, or `console.error` directly. Use the `log()` function with a stable source name.
-
-## Task Progress SSE Patterns
-
-### SSEManager event coalescing
-
-- `SSEManager` (in `public/js/app-ui/sse-manager.mjs`) batches events via `setTimeout(0)` before dispatching. This prevents replayed completed tasks from firing multiple `onComplete` calls.
-- Pruning rule in `_flushEvents`: if a terminal event (`complete`/`error`/`cancelled`) is present in the batch, discard all `progress` events and dispatch only the terminal. If no terminal: discard all `progress` except the last, dispatch that one.
-- Transient-error rule in `_handleError`: an `onerror` with `readyState === CONNECTING` (browser auto-reconnecting) must NOT kill the subscription — the server keeps completed tasks (with their full message buffer, including terminal events) for 5 minutes and replays the buffer on reconnect, so the completion arrives after the retry. Only `readyState === CLOSED` cleans up (silently, deferred one tick); other states surface `onError` and unsubscribe. The 2-minute inactivity timeout remains the backstop.
-- The `/progress/:taskId` heartbeat is a NAMED SSE event (`event: heartbeat`, every 30s), not a comment — comments never reach EventSource JS. `SSEManager` listens for it and resets the inactivity timeout without dispatching to callbacks, so the timeout only fires on a genuinely dead stream, never on a slow-but-alive task that legitimately goes minutes between progress events.
-- Terminal events must carry everything the client needs in their payload. A client handler that re-fetches a REST endpoint on `complete` races any server-side write that happens in the task's post-completion `.then()` — that write lands AFTER the event was emitted. Read from the event's `result`, not from a follow-up fetch.
-- `ProgressBanner` fast-complete bypass: if `handleComplete` fires before any `progress` event was received (`hadProgressRef.current === false`), skip the banner display and call `onComplete`/`onDismiss` immediately — the task was already done when the subscription opened.
 
 ## Save/Revert Pattern (settings and persistent records)
 
