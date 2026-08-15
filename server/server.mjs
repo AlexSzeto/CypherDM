@@ -6,6 +6,7 @@ import path from 'path'
 import { DATABASE_DIR, LOGS_DIR, PUBLIC_DIR } from './core/paths.mjs'
 import { loadConfig } from './core/config.mjs'
 import { log } from './core/logger.mjs'
+import { migrateAll } from './core/migrator.mjs'
 
 const app = express()
 
@@ -19,6 +20,13 @@ for (const dir of [DATABASE_DIR, LOGS_DIR]) {
 // ---------------------------------------------------------------------------
 // Bootstrap
 // ---------------------------------------------------------------------------
+try {
+  await migrateAll()
+} catch (error) {
+  log('server', 'error', `Failed to run migrations: ${error}`)
+  process.exit(1)
+}
+
 let config
 try {
   config = loadConfig()

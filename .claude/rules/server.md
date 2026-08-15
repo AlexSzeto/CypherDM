@@ -8,7 +8,7 @@ The backend is organized into **Feature Domains** to avoid monolithic files. Eac
 
 ### Directory Structure
 
-- **`server/server.mjs`**: Entry point. initializes Express, loads config, and mounts domain routers.
+- **`server/server.mjs`**: Entry point. Initializes Express, runs migrations (`await migrateAll()`), loads config, and mounts domain routers.
 - **`server/core/`**: Shared foundational code (Config, Logger, EventBus/SSE, Database Driver).
 - **`server/features/<domain>/`**: one folder per domain, each following the same shape:
   - `router.mjs`: Express router — endpoint definitions only, mounted from `server.mjs`.

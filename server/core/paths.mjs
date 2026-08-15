@@ -33,3 +33,11 @@ export const CONFIG_PATH = path.join(SERVER_DIR, 'config.json')
 
 /** Path to `config.default.json` */
 export const DEFAULT_CONFIG_PATH = path.join(SERVER_DIR, 'config.default.json')
+
+/** Path to migration backups directory */
+export const BACKUP_DIR = path.join(
+  PROJECT_ROOT,
+  'scripts',
+  'migrate',
+  'backups',
+)
