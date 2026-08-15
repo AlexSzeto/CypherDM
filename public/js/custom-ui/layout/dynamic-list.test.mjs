@@ -10,7 +10,7 @@
  * unsaved state under the new item's identity.
  *
  * This test renders a DynamicList with a tiny stateful "form" component (the
- * same shape as the real bug-prone renderItem callbacks, e.g. SfxCard) and
+ * same shape as the real bug-prone renderItem callbacks) and
  * verifies that inserting a new item before an existing unsaved item does not
  * bleed the unsaved item's typed content onto the new item, and that the
  * unsaved item's typed content stays attached to it.
@@ -23,8 +23,8 @@ import { DynamicList } from './dynamic-list.mjs'
 
 afterEach(() => cleanup())
 
-// Mirrors the bug-prone pattern in SfxCard/GenreCard/HandyPresetForm: local
-// state seeded once from a prop via useState's lazy initializer.
+// Mirrors the bug-prone renderItem pattern: local state seeded once from a
+// prop via useState's lazy initializer.
 function TestItemForm({ item }) {
   const [value, setValue] = useState(item.text)
   const testId = `input-${item._localId ?? item.uid}`

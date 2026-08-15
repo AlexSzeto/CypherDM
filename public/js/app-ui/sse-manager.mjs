@@ -65,9 +65,9 @@ class SSEManager {
     })
 
     // Server liveness heartbeat (every 30s): resets the inactivity timeout so
-    // slow-but-alive generations (e.g. long video renders with minutes between
-    // progress events) aren't killed by the 2-minute timeout. Not dispatched
-    // to callbacks — the timeout now only fires on a genuinely dead stream.
+    // slow-but-alive tasks (minutes between progress events) aren't killed by
+    // the 2-minute timeout. Not dispatched to callbacks — the timeout now only
+    // fires on a genuinely dead stream.
     eventSource.addEventListener('heartbeat', () => {
       if (!this.activeConnections.has(taskId)) return
       this._clearTimeout(taskId)
@@ -317,8 +317,8 @@ class SSEManager {
       // server replays the task's full message buffer (including terminal
       // events) on reconnect, so the subscription must stay alive. Killing it
       // here permanently loses the completion for callbacks with no onError
-      // handler (e.g. silent video-completion refreshers). The inactivity
-      // timeout remains the backstop if the reconnect never succeeds.
+      // handler. The inactivity timeout remains the backstop if the reconnect
+      // never succeeds.
       log(
         'sse',
         'warn',

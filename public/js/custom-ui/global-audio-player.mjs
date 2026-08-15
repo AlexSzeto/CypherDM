@@ -2,9 +2,9 @@ import { log } from './logger.mjs'
 /**
  * Global Audio Player State Manager
  *
- * Manages multiple independent audio channels. Channel 0 is the legacy voice
- * channel; channel 1 is reserved for SFX. Additional channels can be added
- * without any code changes — they are created lazily on first use.
+ * Manages multiple independent audio channels. Channel 0 is the default voice
+ * channel; channel 1 is reserved for sound effects. Additional channels can be
+ * added without any code changes — they are created lazily on first use.
  *
  * All public methods accept an optional `channel` parameter (default 0) so
  * existing call sites require no changes.

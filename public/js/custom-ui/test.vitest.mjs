@@ -752,9 +752,9 @@ describe('ContentEditablePillInput', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     render(html`
       <${ContentEditablePillInput}
-        values=${['blue_eyes', 'long hair']}
+        values=${['stealthy', 'quick reflexes']}
         onValuesChange=${() => {}}
-        getPillTooltip=${(v) => (v === 'blue_eyes' ? 'Character has blue-coloured irises' : null)}
+        getPillTooltip=${(v) => (v === 'stealthy' ? 'Descriptor: +2 to your Speed Pool' : null)}
       />
     `)
     expect(spy).not.toHaveBeenCalled()

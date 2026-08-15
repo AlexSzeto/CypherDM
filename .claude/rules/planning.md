@@ -102,12 +102,12 @@ Release-level statement of the rollout's intent — what a user gets when this b
 
 ## Stories
 
-- [x] `tag-hover-definitions.md` — Tag Hover Definitions
-- [ ] `tag-panel-semantic-search.md` — Tag Panel Semantic Search
+- [x] `character-sheet-stat-pools.md` — Character Sheet Stat Pools
+- [ ] `dm-dashboard-party-overview.md` — DM Dashboard Party Overview
 
 ## Tickets
 
-- [ ] `editor-queue-plot-multi-tab-dialog-crosstalk.md` — Editor Queue Plot Multi-Tab Dialog Crosstalk
+- [ ] `stat-pool-edit-desyncs-across-tabs.md` — Stat Pool Edit Desyncs Across Tabs
 
 ## Notes
 
@@ -300,8 +300,6 @@ Anything considered and cut, with why.
 ```
 
 `archive-feature` writes the summary, deletes the archived child cards and the feature card from the board, and outputs a draft PR title and description. Git history preserves the raw cards, so the summary is a distillation rather than a dump — it exists to be read, which the old per-card archive rarely was.
-
-`project-management/archived/legacy/` holds the pre-feature-system archive: sequentially numbered per-card files (`1-…` through `201-…`) plus the `ambrew-integration/` sub-project. It is frozen — nothing new is written there.
 
 ## Modifying the Project Management System
 

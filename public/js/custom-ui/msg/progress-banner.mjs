@@ -136,11 +136,11 @@ const DismissButton = styled('button')`
 DismissButton.className = 'dismiss-button'
 
 /**
- * ProgressBanner - Displays real-time progress updates for image generation tasks
+ * ProgressBanner - Displays real-time progress updates for long-running server tasks
  *
  * This component subscribes to SSE progress updates via the passed sseManager and displays
- * a fixed banner at the bottom-right of the screen. It automatically maps ComfyUI node types
- * to human-readable step names and updates the browser page title with progress percentage.
+ * a fixed banner at the bottom-right of the screen. It shows the server-supplied step label
+ * and updates the browser page title with progress percentage.
  *
  * The banner calls onDismiss after completion (2 seconds) or error (5 seconds), and
  * when manually dismissed by clicking the X button. Parent controls mounting/unmounting.
@@ -148,15 +148,15 @@ DismissButton.className = 'dismiss-button'
  * @param {Object} props
  * @param {string} props.taskId - The unique task ID to monitor (required)
  * @param {Object} props.sseManager - SSE manager instance for subscribing to progress events (required)
- * @param {Function} [props.onComplete] - Callback when generation completes successfully
- * @param {Function} [props.onError] - Callback when generation fails
- * @param {Function} [props.onCancelled] - Callback when generation is cancelled
+ * @param {Function} [props.onComplete] - Callback when the task completes successfully
+ * @param {Function} [props.onError] - Callback when the task fails
+ * @param {Function} [props.onCancelled] - Callback when the task is cancelled
  * @param {Function} [props.onCancel] - Called when the user clicks the cancel (trash) button
  * @param {string} [props.defaultTitle] - Default page title to restore after completion
- * @param {Function} [props.onProgress] - Callback invoked with the raw generation percentage (0–100) on each progress event
+ * @param {Function} [props.onProgress] - Callback invoked with the raw task percentage (0–100) on each progress event
  * @param {Function} [props.onDismiss] - Callback when banner should be dismissed (required for provider pattern)
  * @param {boolean} [props.suppressTitle=false] - When true, skips all pageTitleManager update/reset calls
- *   (the caller owns document.title instead, e.g. AnyTale play mode's load-percentage title)
+ *   (the caller owns document.title instead)
  * @returns {preact.VNode}
  *
  * @example
