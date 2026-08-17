@@ -216,25 +216,51 @@ export const ICON_MAP = {
 
   // Icons chosen to represent CypherDM concepts
 
-  table: 'table',                   // Overview
+  table: 'table', // Overview
   // book: 'book_2',                // Skills & Abilities
-  sword: 'swords',                  // Equipment
-  hurricane: 'cyclone',             // Cyphers
-  note: 'sticky_note',              // Notes
+  sword: 'swords', // Equipment
+  hurricane: 'cyclone', // Cyphers
+  note: 'sticky_note', // Notes
   // group: 'group',                // Roster
   // cog: 'settings',               // Config
-  'dumbbell-alt': 'exercise',       // Might
-  sneaker: 'steps',                 // Speed
-  cognition: 'cognition',           // Intellect
-  pulse: 'vital_signs',             // Condition
-  'medal-alt': 'license',           // XP
-  'heart-plus': 'heart_plus',       // Recovery
-  bone: 'femur',                    // Impaired
-  skull: 'skull',                   // Debilitated
-  explosion: 'explosion',           // Cypher Overload
+  'dumbbell-alt': 'exercise', // Might
+  sneaker: 'steps', // Speed
+  cognition: 'cognition', // Intellect
+  pulse: 'vital_signs', // Condition
+  'medal-alt': 'license', // XP
+  'heart-plus': 'heart_plus', // Recovery
+  bone: 'femur', // Impaired
+  skull: 'skull', // Debilitated
+  explosion: 'explosion', // Cypher Overload
   // 'arrow-out-up-square-half': 'upload' // Give Equipment
 
+  // Remaining CypherDM concepts, served by entries already present above.
+  // Listed here so the concept -> key choice is recorded in one place;
+  // these are comments, not entries, so they cannot shadow the originals.
 
+  // menu                   // Hamburger menu
+  // home                   // Home
+  // sun / moon             // Theme toggle (light / dark)
+  // palette                // Character colour swatch
+  // user                   // Name column (GM table)
+  hourglass: 'hourglass',   // Initiative column
+  // layers                 // Level column
+  // check                  // Turn taken
+  // x                      // Recovery exhausted (all four slots spent)
+  // plus                   // Add (dynamic list item, Add Creatures, Add Equipment)
+  // trash                  // Delete / Remove (list item, equipment, cypher)
+  // drag-handle            // Reorder
+  // pencil                 // Enter edit mode
+  // chevron-down / chevron-up  // Collapse / expand (ability, cypher rows)
+  // arrow-left-stroke      // Return to GM view
+  // info-circle            // Tooltip / helper info
+  // check-circle           // Save indicator, saved
+  // alert-circle           // Save indicator, failed
+  // refresh                // New Round
+  thunder: 'flash_on',      // GM Intrusion
+  // play                   // Start / Restart Initiative
+  // stop                   // End Initiative
+  // list-ul                // Event Log
 }
 
 /**
