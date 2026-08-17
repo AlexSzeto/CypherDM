@@ -213,6 +213,28 @@ export const ICON_MAP = {
   'drag-handle': 'drag_indicator',
   'expand-right': 'expand_content',
   'collapse-right': 'collapse_content',
+
+  // Icons chosen to represent CypherDM concepts
+
+  table: 'table',                   // Overview
+  // book: 'book_2',                // Skills & Abilities
+  sword: 'swords',                  // Equipment
+  hurricane: 'cyclone',             // Cyphers
+  note: 'sticky_note',              // Notes
+  // group: 'group',                // Roster
+  // cog: 'settings',               // Config
+  'dumbbell-alt': 'exercise',       // Might
+  sneaker: 'steps',                 // Speed
+  cognition: 'cognition',           // Intellect
+  pulse: 'vital_signs',             // Condition
+  'medal-alt': 'license',           // XP
+  'heart-plus': 'heart_plus',       // Recovery
+  bone: 'femur',                    // Impaired
+  skull: 'skull',                   // Debilitated
+  explosion: 'explosion',           // Cypher Overload
+  // 'arrow-out-up-square-half': 'upload' // Give Equipment
+
+
 }
 
 /**
