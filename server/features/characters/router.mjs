@@ -8,12 +8,15 @@ import express from 'express'
 
 import { validate } from '../../core/sanitizer.mjs'
 import {
+  addListItem,
   CharacterError,
   createCharacter,
   deleteCharacter,
   getCharacter,
   listCharacters,
   patchCharacter,
+  patchListItem,
+  removeListItem,
 } from './service.mjs'
 
 /** Request body schema for `POST /`. */
@@ -45,6 +48,27 @@ export const patchRequestSchema = {
         },
       },
     },
+  },
+}
+
+/** Request body schema for `POST /:id/:listName`. */
+export const addListItemRequestSchema = {
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  required: ['actor'],
+  properties: {
+    actor: { type: 'string', minLength: 1 },
+    seed: { type: 'object' },
+  },
+}
+
+/** Request body schema for `DELETE /:id/:listName/:uid`. */
+export const removeListItemRequestSchema = {
+  $schema: 'http://json-schema.org/draft-07/schema#',
+  type: 'object',
+  required: ['actor'],
+  properties: {
+    actor: { type: 'string', minLength: 1 },
   },
 }
 
@@ -101,6 +125,73 @@ router.patch('/:id', (req, res) => {
       actor: body.actor,
       ...(body.clientSeq === undefined ? {} : { clientSeq: body.clientSeq }),
     })
+  } catch (error) {
+    sendError(res, error)
+  }
+})
+
+router.post('/:id/:listName', (req, res) => {
+  const body = req.body ?? {}
+  const { valid, errors } = validate(body, addListItemRequestSchema)
+  if (!valid) {
+    return res.status(400).json({ error: 'Invalid request', details: errors })
+  }
+
+  try {
+    const { record, item } = addListItem(
+      req.params.id,
+      req.params.listName,
+      body.seed ?? {},
+      body.actor,
+    )
+    res.status(201).json({ record, item })
+  } catch (error) {
+    sendError(res, error)
+  }
+})
+
+router.patch('/:id/:listName/:uid', (req, res) => {
+  const body = req.body ?? {}
+  const { valid, errors } = validate(body, patchRequestSchema)
+  if (!valid) {
+    return res.status(400).json({ error: 'Invalid request', details: errors })
+  }
+
+  try {
+    const { record, applied } = patchListItem(
+      req.params.id,
+      req.params.listName,
+      req.params.uid,
+      body,
+    )
+    res.json({
+      record,
+      applied,
+      actor: body.actor,
+      ...(body.clientSeq === undefined ? {} : { clientSeq: body.clientSeq }),
+    })
+  } catch (error) {
+    sendError(res, error)
+  }
+})
+
+// Answers with the record rather than 204: the client needs the surviving rows
+// to re-render, and a follow-up GET would race a concurrent write.
+router.delete('/:id/:listName/:uid', (req, res) => {
+  const body = req.body ?? {}
+  const { valid, errors } = validate(body, removeListItemRequestSchema)
+  if (!valid) {
+    return res.status(400).json({ error: 'Invalid request', details: errors })
+  }
+
+  try {
+    const { record } = removeListItem(
+      req.params.id,
+      req.params.listName,
+      req.params.uid,
+      body.actor,
+    )
+    res.json({ record })
   } catch (error) {
     sendError(res, error)
   }

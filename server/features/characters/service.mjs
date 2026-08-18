@@ -13,7 +13,13 @@ import { randomUUID } from 'crypto'
 import { validate } from '../../core/sanitizer.mjs'
 import { log } from '../../core/logger.mjs'
 import { readData, writeData } from './repository.mjs'
-import { characterSchema, sanitizeCharacter } from './sanitizer.mjs'
+import {
+  characterSchema,
+  LIST_NAMES,
+  listItemSchema,
+  sanitizeCharacter,
+  sanitizeListItem,
+} from './sanitizer.mjs'
 
 /** Path segments that are never legal, regardless of the schema. */
 const FORBIDDEN_SEGMENTS = ['__proto__', 'constructor', 'prototype']
@@ -40,11 +46,11 @@ export class CharacterError extends Error {
  * @param {Object} schema
  * @returns {Object}
  */
-function deref(schema) {
+function deref(schema, root = characterSchema) {
   if (!schema || typeof schema !== 'object') return schema
   if (!schema.$ref) return schema
   const parts = schema.$ref.slice(2).split('/')
-  let resolved = characterSchema
+  let resolved = root
   for (const part of parts) resolved = resolved?.[part]
   return resolved ?? schema
 }
@@ -59,15 +65,17 @@ function deref(schema) {
  * quietly writing to whatever currently sits at that position.
  *
  * @param {string} path
+ * @param {Object} [root] - schema to resolve against; the character record by
+ *   default, or a list item's schema when patching a row
  * @returns {Object} the schema node the path addresses
  */
-export function resolvePathSchema(path) {
+export function resolvePathSchema(path, root = characterSchema) {
   if (typeof path !== 'string' || path.length === 0) {
     throw new CharacterError(400, 'Patch path must be a non-empty string')
   }
 
   const segments = path.split('.')
-  let node = characterSchema
+  let node = root
 
   for (const segment of segments) {
     if (FORBIDDEN_SEGMENTS.includes(segment)) {
@@ -81,7 +89,7 @@ export function resolvePathSchema(path) {
       )
     }
 
-    node = deref(node)
+    node = deref(node, root)
     const next = node?.properties?.[segment]
     if (!next) {
       throw new CharacterError(400, `Unknown patch path: ${path}`)
@@ -89,7 +97,7 @@ export function resolvePathSchema(path) {
     node = next
   }
 
-  return deref(node)
+  return deref(node, root)
 }
 
 /**
@@ -261,4 +269,124 @@ export function deleteCharacter(id) {
   data.characters.splice(index, 1)
   writeData(data)
   log('characters', 'info', `Deleted character ${id}`)
+}
+
+/**
+ * Resolve a character and one of its lists, rejecting an unknown list name
+ * before it can reach a property lookup on the record.
+ * @param {Object} data
+ * @param {string} id
+ * @param {string} listName
+ * @returns {{ record: Object, list: Object[] }}
+ */
+function resolveList(data, id, listName) {
+  const record = data.characters.find((c) => c.id === id)
+  if (!record) throw new CharacterError(404, `No character with id ${id}`)
+  if (!LIST_NAMES.includes(listName)) {
+    throw new CharacterError(404, `No such list: ${listName}`)
+  }
+  return { record, list: record[listName] }
+}
+
+/**
+ * Find a row by uid.
+ * @param {Object[]} list
+ * @param {string} listName
+ * @param {string} uid
+ * @returns {number} the row's index
+ */
+function requireRowIndex(list, listName, uid) {
+  const index = list.findIndex((row) => row.uid === uid)
+  if (index === -1) {
+    throw new CharacterError(404, `No ${listName} row with uid ${uid}`)
+  }
+  return index
+}
+
+/**
+ * Append a row to one of a character's lists.
+ *
+ * The uid is assigned here, by the server, because a row must be addressable
+ * by something no concurrent insert or delete can invalidate — an index would
+ * silently redirect another party's edit onto a different row.
+ *
+ * @param {string} id
+ * @param {string} listName
+ * @param {Object} [seed] - initial field values; unknown keys are dropped
+ * @param {string} [actor]
+ * @returns {{ record: Object, item: Object }}
+ */
+export function addListItem(id, listName, seed = {}, actor = 'unknown') {
+  const data = readData()
+  const { record, list } = resolveList(data, id, listName)
+
+  const item = sanitizeListItem(listName, { ...seed, uid: randomUUID() })
+  list.push(item)
+  record.modifiedAt = new Date().toISOString()
+  writeData(data)
+  log('characters', 'info', `Added ${listName} row ${item.uid} by ${actor}`)
+  return { record, item }
+}
+
+/**
+ * Apply field-level patches to one row, addressed by uid.
+ *
+ * @param {string} id
+ * @param {string} listName
+ * @param {string} uid
+ * @param {{ actor: string, patches: Array<{ path: string, value: * }> }} request
+ * @returns {{ record: Object, applied: string[] }}
+ */
+export function patchListItem(id, listName, uid, { actor, patches }) {
+  const data = readData()
+  const { record, list } = resolveList(data, id, listName)
+  const row = list[requireRowIndex(list, listName, uid)]
+  const itemSchema = listItemSchema(listName)
+
+  for (const patch of patches) {
+    if (patch.path === 'uid' || patch.path.startsWith('uid.')) {
+      throw new CharacterError(400, 'A row uid cannot be patched')
+    }
+    const schema = resolvePathSchema(patch.path, itemSchema)
+    assertValueMatches(patch.path, schema, patch.value)
+  }
+
+  const applied = []
+  for (const patch of patches) {
+    writeAtPath(row, patch.path, patch.value)
+    applied.push(patch.path)
+  }
+  record.modifiedAt = new Date().toISOString()
+
+  const { valid, errors } = validate(record, characterSchema)
+  if (!valid) {
+    throw new CharacterError(400, 'Patch produced an invalid character', errors)
+  }
+
+  writeData(data)
+  log(
+    'characters',
+    'info',
+    `Patched ${listName} row ${uid} by ${actor}: ${applied.join(', ')}`,
+  )
+  return { record, applied }
+}
+
+/**
+ * Remove one row, addressed by uid.
+ *
+ * @param {string} id
+ * @param {string} listName
+ * @param {string} uid
+ * @param {string} [actor]
+ * @returns {{ record: Object }}
+ */
+export function removeListItem(id, listName, uid, actor = 'unknown') {
+  const data = readData()
+  const { record, list } = resolveList(data, id, listName)
+  list.splice(requireRowIndex(list, listName, uid), 1)
+  record.modifiedAt = new Date().toISOString()
+  writeData(data)
+  log('characters', 'info', `Removed ${listName} row ${uid} by ${actor}`)
+  return { record }
 }

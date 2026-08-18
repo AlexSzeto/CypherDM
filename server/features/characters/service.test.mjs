@@ -5,12 +5,15 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { setDatabaseDir, readData } from './repository.mjs'
 import {
+  addListItem,
   CharacterError,
   createCharacter,
   deleteCharacter,
   getCharacter,
   listCharacters,
   patchCharacter,
+  patchListItem,
+  removeListItem,
 } from './service.mjs'
 
 let tempDir
@@ -161,5 +164,112 @@ describe('deleteCharacter', () => {
     expect(listCharacters()).toHaveLength(0)
     expect(() => deleteCharacter(id)).toThrow(CharacterError)
     expect(() => getCharacter(id)).toThrow(/No character with id/)
+  })
+})
+
+describe('list items', () => {
+  it('assigns a uuid uid and fills the row defaults', () => {
+    const { id } = createCharacter()
+    const { item } = addListItem(id, 'skills', { name: 'Climbing' })
+
+    expect(item.uid).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    )
+    expect(item.name).toBe('Climbing')
+    expect(item.proficiency).toBe('trained')
+    expect(item.source).toBe('')
+  })
+
+  it('gives each row a distinct uid', () => {
+    const { id } = createCharacter()
+    const a = addListItem(id, 'skills').item
+    const b = addListItem(id, 'skills').item
+    expect(a.uid).not.toBe(b.uid)
+  })
+
+  it('drops unknown keys from a seed', () => {
+    const { id } = createCharacter()
+    const { item } = addListItem(id, 'equipment', {
+      name: 'Rope',
+      nonsense: true,
+    })
+    expect(item.nonsense).toBeUndefined()
+    expect(item.name).toBe('Rope')
+  })
+
+  it('patches only the addressed row', () => {
+    const { id } = createCharacter()
+    const first = addListItem(id, 'skills', { name: 'Climbing' }).item
+    const second = addListItem(id, 'skills', { name: 'Swimming' }).item
+
+    patchListItem(id, 'skills', second.uid, {
+      actor: 'test',
+      patches: [{ path: 'name', value: 'Diving' }],
+    })
+
+    const skills = getCharacter(id).skills
+    expect(skills.find((s) => s.uid === first.uid).name).toBe('Climbing')
+    expect(skills.find((s) => s.uid === second.uid).name).toBe('Diving')
+  })
+
+  it('leaves the survivors untouched when a row in the middle is removed', () => {
+    const { id } = createCharacter()
+    const a = addListItem(id, 'skills', { name: 'A' }).item
+    const b = addListItem(id, 'skills', { name: 'B' }).item
+    const c = addListItem(id, 'skills', { name: 'C' }).item
+
+    removeListItem(id, 'skills', b.uid)
+
+    const skills = getCharacter(id).skills
+    expect(skills.map((s) => s.uid)).toEqual([a.uid, c.uid])
+    expect(skills.map((s) => s.name)).toEqual(['A', 'C'])
+  })
+
+  it('rejects a patch to a removed row', () => {
+    const { id } = createCharacter()
+    const { uid } = addListItem(id, 'skills').item
+    removeListItem(id, 'skills', uid)
+
+    try {
+      patchListItem(id, 'skills', uid, {
+        actor: 'test',
+        patches: [{ path: 'name', value: 'gone' }],
+      })
+      throw new Error('should have thrown')
+    } catch (error) {
+      expect(error).toBeInstanceOf(CharacterError)
+      expect(error.status).toBe(404)
+    }
+  })
+
+  it('refuses to patch a row uid', () => {
+    const { id } = createCharacter()
+    const { uid } = addListItem(id, 'skills').item
+    expect(() =>
+      patchListItem(id, 'skills', uid, {
+        actor: 'test',
+        patches: [{ path: 'uid', value: 'hijacked' }],
+      }),
+    ).toThrow(/uid cannot be patched/)
+  })
+
+  it('rejects an unknown list name on every operation', () => {
+    const { id } = createCharacter()
+    expect(() => addListItem(id, 'constructor')).toThrow(/No such list/)
+    expect(() => removeListItem(id, 'nonsense', 'x')).toThrow(/No such list/)
+    expect(() =>
+      patchListItem(id, 'nonsense', 'x', { actor: 'test', patches: [] }),
+    ).toThrow(/No such list/)
+  })
+
+  it('rejects a value of the wrong type inside a row', () => {
+    const { id } = createCharacter()
+    const { uid } = addListItem(id, 'attacks').item
+    expect(() =>
+      patchListItem(id, 'attacks', uid, {
+        actor: 'test',
+        patches: [{ path: 'damage', value: 'lots' }],
+      }),
+    ).toThrow(/must be of type number/)
   })
 })

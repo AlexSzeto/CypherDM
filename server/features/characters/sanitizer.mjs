@@ -24,6 +24,48 @@ export const characterSchema = {
 }
 
 /**
+ * The list-shaped fields of a character. This doubles as the allowlist for
+ * every list endpoint: a `listName` outside it must never reach a property
+ * lookup on the record.
+ */
+export const LIST_NAMES = [
+  'skills',
+  'abilities',
+  'attacks',
+  'cyphers',
+  'equipment',
+]
+
+/**
+ * The item sub-schema for one list, with definitions attached so `$ref`
+ * resolves inside it.
+ * @param {string} listName
+ * @returns {Object|null} the item schema, or null for an unknown list
+ */
+export function listItemSchema(listName) {
+  if (!LIST_NAMES.includes(listName)) return null
+  const ref = characterSchema.properties[listName]?.items?.$ref
+  if (!ref) return null
+  const definition =
+    charactersSchema.definitions[ref.slice(ref.lastIndexOf('/') + 1)]
+  return { ...definition, definitions: charactersSchema.definitions }
+}
+
+/**
+ * Fill defaults on one list row and drop unknown keys.
+ * @param {string} listName
+ * @param {Object} row
+ * @returns {Object} the same object, mutated
+ */
+export function sanitizeListItem(listName, row) {
+  const schema = listItemSchema(listName)
+  if (!schema) return row
+  sanitize(row, schema)
+  dropUnknownKeys(row, schema)
+  return row
+}
+
+/**
  * Drop keys not declared in a schema's `properties`.
  * @param {Object} record
  * @param {Object} schema

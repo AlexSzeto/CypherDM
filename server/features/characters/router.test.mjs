@@ -97,3 +97,58 @@ describe('characters router', () => {
     await request(app).get(`/api/characters/${id}`).expect(404)
   })
 })
+
+describe('list item routes', () => {
+  /** @returns {Promise<string>} the id of a freshly created character */
+  async function createId() {
+    const created = await request(app).post('/api/characters').send({})
+    return created.body.record.id
+  }
+
+  it('adds, patches, and removes a row by uid', async () => {
+    const id = await createId()
+
+    const added = await request(app)
+      .post(`/api/characters/${id}/skills`)
+      .send({ actor: 'harness', seed: { name: 'Climbing' } })
+      .expect(201)
+
+    const { uid } = added.body.item
+    expect(uid).toBeTruthy()
+    expect(added.body.record.skills).toHaveLength(1)
+
+    const patched = await request(app)
+      .patch(`/api/characters/${id}/skills/${uid}`)
+      .send({ actor: 'harness', patches: [{ path: 'name', value: 'Diving' }] })
+      .expect(200)
+    expect(patched.body.record.skills[0].name).toBe('Diving')
+
+    const removed = await request(app)
+      .delete(`/api/characters/${id}/skills/${uid}`)
+      .send({ actor: 'harness' })
+      .expect(200)
+    expect(removed.body.record.skills).toHaveLength(0)
+
+    await request(app)
+      .delete(`/api/characters/${id}/skills/${uid}`)
+      .send({ actor: 'harness' })
+      .expect(404)
+  })
+
+  it('answers 404 for an unknown list name', async () => {
+    const id = await createId()
+    await request(app)
+      .post(`/api/characters/${id}/nonsense`)
+      .send({ actor: 'harness' })
+      .expect(404)
+  })
+
+  it('answers 400 when the add body has no actor', async () => {
+    const id = await createId()
+    const response = await request(app)
+      .post(`/api/characters/${id}/skills`)
+      .send({})
+      .expect(400)
+    expect(response.body.details.length).toBeGreaterThan(0)
+  })
+})
