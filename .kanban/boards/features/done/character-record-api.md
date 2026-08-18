@@ -2,13 +2,13 @@
 version: 1
 id: 'character-record-api'
 boardId: 'features'
-status: 'in-progress'
+status: 'done'
 priority: 'high'
 assignee: null
 dueDate: null
 created: '2026-08-18T05:28:38Z'
-modified: '2026-08-18T05:40:00Z'
-completedAt: null
+modified: '2026-08-18T05:46:52.670Z'
+completedAt: '2026-08-18T05:47:00Z'
 labels: ['story']
 attachments: []
 order: 'a0'
