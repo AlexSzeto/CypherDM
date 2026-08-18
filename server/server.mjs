@@ -7,6 +7,7 @@ import { DATABASE_DIR, LOGS_DIR, PUBLIC_DIR } from './core/paths.mjs'
 import { loadConfig } from './core/config.mjs'
 import { log } from './core/logger.mjs'
 import { migrateAll } from './core/migrator.mjs'
+import { router as charactersRouter } from './features/characters/router.mjs'
 
 const app = express()
 
@@ -60,6 +61,7 @@ app.locals.config = config
 // ---------------------------------------------------------------------------
 // Feature domains live in server/features/<domain>/router.mjs and are mounted
 // here as they are added.
+app.use('/api/characters', charactersRouter)
 
 // ---------------------------------------------------------------------------
 // Routes that remain in server.mjs (not yet migrated to a feature domain)

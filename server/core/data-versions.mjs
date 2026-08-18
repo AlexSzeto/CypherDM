@@ -7,10 +7,16 @@
  *
  * Domains with no "version" field in their data file are treated as version 0.
  */
-import { CONFIG_PATH } from './paths.mjs'
+import path from 'path'
+
+import { CONFIG_PATH, DATABASE_DIR } from './paths.mjs'
 
 export const DATA_DOMAINS = {
   config: { currentVersion: 1, filePath: CONFIG_PATH },
+  characters: {
+    currentVersion: 1,
+    filePath: path.join(DATABASE_DIR, 'characters-data.json'),
+  },
 }
 
 /**

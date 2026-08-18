@@ -7,7 +7,7 @@ priority: 'high'
 assignee: null
 dueDate: null
 created: '2026-08-18T04:47:40Z'
-modified: '2026-08-18T04:47:40Z'
+modified: '2026-08-18T06:20:00Z'
 completedAt: null
 labels: ['feature']
 attachments: []
@@ -37,3 +37,10 @@ Delivers the server event bus and its SSE endpoint, client subscription with rec
 **Connection state is never persisted.** It is derived live from the SSE connection and exists only in memory.
 
 This branch also completes the **disabled-claimed-seat state** on the home page deferred from app-shell-and-home-page, since that is the first point at which the app knows who is connected.
+
+**Inherited from character-data-and-sync (archived 2026-08-18):**
+
+- **The actor tag already exists on the wire.** Every patch carries a required `actor`, which the server echoes and deliberately does **not** persist. This branch is its first consumer — nothing else reads it yet, so its meaning is whatever this branch defines.
+- **`clientSeq` is already sent and echoed** by the character endpoints. The server does not otherwise know the client queue exists, which is what kept it a pure request/response API; keep it that way, and add push as a separate channel rather than as a response to a write.
+- **Do not bypass or duplicate the client patch queue.** It owns write ordering and the `SaveIndicator`'s state. An SSE-driven record refresh must not clobber a record that still has unsent local writes queued — reconcile against the queue rather than blindly re-seeding.
+- The `saved` / `saving` / `notSaving` indicator is separate from connection state and stays that way: one reports whether _my_ writes are landing, the other whether _their_ changes are arriving.

@@ -7,7 +7,7 @@ priority: 'high'
 assignee: null
 dueDate: null
 created: '2026-08-18T04:47:40Z'
-modified: '2026-08-18T04:47:40Z'
+modified: '2026-08-18T06:20:00Z'
 completedAt: null
 labels: ['feature']
 attachments: []
@@ -37,3 +37,9 @@ Delivers the Party/Encounter tab as a placeholder, the Notes tab, and the Config
 The GM page is the destination recorded by last-destination memory. The GM's **view of a character sheet is not recorded**, so reopening the app returns the GM to their dashboard rather than to whichever sheet they last inspected.
 
 GM notes are private and never broadcast. Character notes are visible to the GM through the sheet, but never generate a toast on either side.
+
+**Inherited from character-data-and-sync (archived 2026-08-18):**
+
+- **Character delete currently cascades nowhere, and this branch owns the roster half.** `DELETE /api/characters/:id` removes the character record only, because the GM Object did not exist when it was written. When the roster lands here, deleting a character must also remove its roster entry — otherwise the dashboard renders a row pointing at a record that is gone. Add a co-located test for it.
+- **Currency name.** The character record stores `currency.amount` only, and every surface currently falls back to the literal string "currency". This branch's Config tab is what replaces that fallback.
+- The GM domain should follow the storage conventions the characters domain established: a JSON **object** carrying `version` (not a bare array), the version stamped by the domain's single write function, atomic `.tmp`-then-rename writes, and a schema in `server/resource/schemas/`. See `docs/features/character-record.md`.
