@@ -2,16 +2,16 @@
 version: 1
 id: 'character-list-items'
 boardId: 'features'
-status: 'in-progress'
+status: 'done'
 priority: 'high'
 assignee: null
 dueDate: null
 created: '2026-08-18T05:28:38Z'
-modified: '2026-08-18T05:58:00Z'
-completedAt: null
+modified: '2026-08-18T06:06:37.993Z'
+completedAt: '2026-08-18T06:07:00Z'
 labels: ['story']
 attachments: []
-order: 'a2'
+order: 'a0VV'
 metadata:
   feature: 'character-data-and-sync'
 ---
