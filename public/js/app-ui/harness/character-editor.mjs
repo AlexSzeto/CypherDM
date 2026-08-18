@@ -21,7 +21,7 @@ import {
   HorizontalLayout,
   VerticalLayout,
 } from '../../custom-ui/themed-base.mjs'
-import { getCharacter, patchCharacter } from './character-api.mjs'
+import { getCharacter, patchCharacter } from '../character-api.mjs'
 
 const ACTOR = 'harness'
 const POOLS = ['might', 'speed', 'intellect']

@@ -20,7 +20,7 @@ import {
   createCharacter,
   deleteCharacter,
   listCharacters,
-} from './character-api.mjs'
+} from '../character-api.mjs'
 
 /**
  * @param {Object} props

@@ -1,12 +1,13 @@
 /**
  * Character API client.
  *
- * The single place the browser talks to `/api/characters`. Every surface that
- * edits a character goes through here, so the offline queue story has one
- * place to change: `patchCharacter`'s signature is the contract, its internals
- * are not.
+ * The single place the browser talks to `/api/characters`. Reads go straight
+ * out; writes go through the per-character patch queue, so a dropout queues
+ * them locally and replays them in order rather than losing them.
  */
-import { log } from '../../custom-ui/logger.mjs'
+import { log } from '../custom-ui/logger.mjs'
+import { getCharacterQueue } from './sync/character-queue.mjs'
+import { PermanentSendError } from './sync/patch-queue.mjs'
 
 const BASE = '/api/characters'
 
@@ -21,17 +22,25 @@ async function request(url, options = {}) {
   try {
     response = await fetch(url, options)
   } catch (error) {
-    log('harness', 'error', `Request to ${url} failed: ${error}`)
+    log('characters', 'error', `Request to ${url} failed: ${error}`)
     throw error
   }
 
   if (!response.ok) {
     const body = await response.text()
     log(
-      'harness',
+      'characters',
       'error',
       `${options.method ?? 'GET'} ${url} → ${response.status}: ${body}`,
     )
+    // A 4xx will never succeed on retry — a bad path, or a character that is
+    // gone. A 5xx might, so it stays an ordinary failure the queue retries.
+    if (response.status >= 400 && response.status < 500) {
+      throw new PermanentSendError(
+        `${response.status} ${body}`,
+        response.status,
+      )
+    }
     throw new Error(`${response.status} ${body}`)
   }
 
@@ -68,7 +77,31 @@ export async function createCharacter(name = '') {
 }
 
 /**
- * Apply field-level patches to a character.
+ * Send one batch of patches immediately. Called by the patch queue only —
+ * every other caller goes through `patchCharacter`, which queues.
+ *
+ * @param {string} id
+ * @param {Array<{ path: string, value: * }>} patches
+ * @param {string} actor
+ * @param {number} clientSeq
+ * @returns {Promise<Object>} the updated record
+ */
+export async function patchCharacterBatch(id, patches, actor, clientSeq) {
+  const body = await request(`${BASE}/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ actor, clientSeq, patches }),
+  })
+  return body.record
+}
+
+/**
+ * Queue field-level patches for a character.
+ *
+ * The returned promise settles when the write actually lands on the server —
+ * which, during a dropout, may be a minute after the edit was made. It rejects
+ * only on a permanent failure; a transport failure leaves it pending while the
+ * queue retries.
  *
  * @param {string} id
  * @param {Array<{ path: string, value: * }>} patches
@@ -76,12 +109,7 @@ export async function createCharacter(name = '') {
  * @returns {Promise<Object>} the updated record
  */
 export async function patchCharacter(id, patches, actor) {
-  const body = await request(`${BASE}/${id}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ actor, patches }),
-  })
-  return body.record
+  return getCharacterQueue(id, actor).enqueue(patches)
 }
 
 /**
