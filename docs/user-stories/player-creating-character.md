@@ -40,14 +40,14 @@ Fixed at the bottom of the viewport is an indicator telling me my character was 
 
 The only navigation hub in the app. All routes are reached from its content.
 
-| Element                           | Behaviour                                                                                 |
-| --------------------------------- | ----------------------------------------------------------------------------------------- |
-| Hamburger menu (fixed, top-right) | Contains exactly two items: **theme toggle** (dark/light) and **home**. No page registry. |
-| GM mode entry                     | Enters the GM dashboard.                                                                  |
-| Character search + list           | Filterable list of existing characters; tapping one opens its sheet.                      |
-| Create new character              | Enters the creation layout with an empty character.                                       |
+| Element                           | Behaviour                                                                                                                                                           |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Hamburger menu (fixed, top-right) | Contains exactly two items: **theme toggle** (dark/light) and **home**. No page registry.                                                                           |
+| GM mode entry                     | Enters the GM dashboard.                                                                                                                                            |
+| Character search + list           | Filterable list of existing characters; tapping one opens its sheet and claims that seat. A character already claimed by another connected client renders disabled. |
+| Create new character              | Enters the creation layout with an empty character.                                                                                                                 |
 
-**Last-destination memory.** The app remembers the last destination the device visited — a specific character _or_ GM mode — and **auto-redirects there on load**. The hamburger's home link is the escape hatch back to the picker. A device with no stored destination (first visit) lands on the home page.
+**Last-destination memory.** The app remembers the last destination the device visited — a specific character _or_ GM mode — and **auto-redirects there on load**. For a character, that memory is also a **claim on the seat**: the device is that character, and the app reports it as connected. The hamburger's home link is the escape hatch back to the picker, releasing the seat. A device with no stored destination (first visit) lands on the home page. See §5.7.
 
 ### 3.2 Creation layout
 
@@ -138,15 +138,15 @@ Damage track (strictly derived), recovery slots (initialised unused), advancemen
 
 The design spec's §3.1 does not cover these. All are required.
 
-| Field            | Shape              | Notes                                                                                                |
-| ---------------- | ------------------ | ---------------------------------------------------------------------------------------------------- |
-| **Name**         | String             | §3.1 defines the identity string as Descriptor/Type/Focus only; the character's own name is missing. |
-| **Colour**       | Colour value       | Player-picked at creation. Identifies the character on the GM party dashboard.                       |
-| **Tier**         | Integer            | Referenced throughout the rules but absent from §3.1. Defaults to 1.                                 |
-| **Cypher limit** | Integer            | Required by the GM dashboard's "cypher count vs. limit" alert.                                       |
-| **Currency**     | `{ amount, name }` | Displayed as the pinned first row of the equipment list.                                             |
-| **Notes**        | String             | Free text, own tab.                                                                                  |
-| **Advancement**  | Four booleans      | The four tier-up options. Persistent state, not touched by creation.                                 |
+| Field            | Shape         | Notes                                                                                                 |
+| ---------------- | ------------- | ----------------------------------------------------------------------------------------------------- |
+| **Name**         | String        | §3.1 defines the identity string as Descriptor/Type/Focus only; the character's own name is missing.  |
+| **Colour**       | Colour value  | Player-picked at creation. Identifies the character on the GM party dashboard.                        |
+| **Tier**         | Integer       | Referenced throughout the rules but absent from §3.1. Defaults to 1.                                  |
+| **Cypher limit** | Integer       | Required by the GM dashboard's "cypher count vs. limit" alert.                                        |
+| **Currency**     | `{ amount }`  | Displayed as the pinned first row of the equipment list.                                              |
+| **Notes**        | String        | Free text, own tab.                                                                                   |
+| **Advancement**  | Five booleans | The five advancement steps; four purchases raise the tier. Persistent state, not touched by creation. |
 
 ### 4.4 Fields this story changes in the design spec
 
@@ -219,17 +219,26 @@ Character data autosaves. There are no save, create, or revert buttons anywhere 
 - **Trigger:** debounced while typing (~750ms–1s), flushed immediately on blur. Blur-only would lose a value typed just before the player closes the tablet.
 - **Partial values persist.** A half-typed name or a partially-filled skill row is written. Acceptable: there is no validation gate and no consumer of a half-created character.
 - **Granularity: field-level patches.** Whole-object writes were chosen first for simplicity, then reversed. During play the **GM writes directly into player sheets** (pushing a cypher or loot per spec §4.2), so concurrent writers genuinely exist. A whole-object write from a player who loaded the sheet before the GM's push would silently erase it. Field-level patches surface the collision immediately and cost at most one field. This also makes the offline queue a replayable ordered list of changes rather than a stack of full snapshots.
+
+  Two consequences settled during planning: **list items are addressed by a server-assigned identifier**, never by array position, so a concurrent reorder cannot redirect a patch onto the wrong row; and **operations that write to two character records are server-side commands rather than pairs of patches**, so giving an item or resolving an intrusion cannot half-land.
+
 - **Failure handling:** a persistent error state, auto-retry, and local queueing until reconnect. On a local server latency is negligible but _dropout_ is real — a tablet wandering off wifi mid-session is the failure mode that matters, and a stale "Saved" timestamp would quietly lie about it.
 
-**Risk recorded:** local queueing makes the client a temporary source of truth, which pulls against the real-time sync requirement in spec §4.1. Ordering, replay-on-reconnect, and conflict rules need a deliberate answer during implementation. Field-level patches make this materially easier but do not make it free.
+**Resolved.** Local queueing makes the client a temporary source of truth, which pulls against the real-time sync requirement in spec §4.1. The answer, settled before implementation: each device keeps a **FIFO queue with a client sequence number** and replays it in order on reconnect; conflicts resolve **last-write-wins per field path**, with no rejection and no merge interface; and the two operations that span two records are **commands rather than patches**. Losing a collision costs one field, which is what makes the rule tolerable.
 
 ### 5.6 Delete requires confirmation because autosave removed the safety net
 
 With no revert, a deletion is irreversible the moment it lands. Hence the per-row trash icon behind a confirmation dialog — the one destructive affordance that survives on item forms that otherwise have no buttons at all.
 
-### 5.7 One device, one destination
+### 5.7 One device, one seat
 
 Auto-redirect to the last destination assumes each participant owns their device. It removes four taps per person at the start of every session. Handing a tablet to another player is recoverable through the hamburger's home link, which is why that link exists at all.
+
+**Opening a character claims it.** The destination is not merely remembered — it is an identity. A device that opens a character sheet _is_ that character for as long as it holds the seat, and that claim is what the app reports as the character's connection state. There is no login, so the seat is the whole of the identity model.
+
+**A claimed seat cannot be claimed twice.** The home page disables the button for any character already held by another connected client. This is what keeps the model honest: without it two devices could hold one character and connection state would mean nothing. It also makes the GM's occasional trip into a player's sheet from the home page safe — that trip _is_ an assumption of the character's identity, which is acceptable outside a session and blocked during one.
+
+GM mode is its own destination and claims no seat, so the GM's dashboard and the GM's in-dashboard view of a sheet never register a character as connected.
 
 ---
 
@@ -248,7 +257,7 @@ Auto-redirect to the last destination assumes each participant owns their device
 ### Component work this story implies
 
 - **`TabPanels`** (`custom-ui/nav/tab-panels.mjs`) needs an `icon` field on its tab shape and the active-shows-label / inactive-shows-icon-only behaviour. It currently accepts `{ id, label, content }` with no icon support.
-- **`ICON_MAP`** (`custom-ui/layout/icon.mjs`) has **no RPG icons** — no sword, shield, backpack, dice, or potion. The five tabs need real icons rather than the closest available approximations. A name absent from the map renders **nothing, silently**, so these cannot be guessed at build time.
+- **`ICON_MAP`** (`custom-ui/layout/icon.mjs`) — **done.** The five tab icons, the three pool stats, and every other concept these stories name have been added, with the reused-key choices recorded as comments so the mapping decisions stay traceable. A name absent from the map still renders **nothing, silently**, so any future concept needs its entry before it is referenced.
 - A **hybrid currency/equipment item component** for the pinned first row of the equipment list.
 - A **single-armour sub-form** for the Equipment tab.
 

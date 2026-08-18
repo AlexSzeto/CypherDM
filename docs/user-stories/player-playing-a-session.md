@@ -152,6 +152,8 @@ Leaving a box checked _is_ the confirmation. A box does not render when no entry
 
 **The recipient receives the equipment item only** — never the attack or armor entry — because carrying a thing and being able to use it are different facts. They reconcile it in edit mode.
 
+**Giving is a single server-side command, not a pair of patches**, since it writes to two character records. A dropout between the two halves would otherwise duplicate the item or destroy it in transit.
+
 ### 3.6 Cyphers tab — play mode
 
 **Limit indicator:** the text "You are bearing", the number `[carrying]/[limit]`, the text "cyphers". The number turns **error red** while over limit.
@@ -162,7 +164,7 @@ Whichever party acts, the other is notified: `[actor] removed [cypher name]`, wi
 
 ### 3.7 Notes tab
 
-Free-text notes, as in creation. Private; never broadcast.
+Free-text notes, as in creation. **Never broadcast** - notes emit no toast on either side. They are not hidden from the GM, who reads them through the sheet like any other tab; "private" here means unannounced, not inaccessible.
 
 ### 3.8 Edit mode
 
@@ -183,7 +185,7 @@ Five checkboxes, one per step, each labelled and each carrying its rules text as
 | 4   | **Skills**                   | Become trained in a new skill; _or_ upgrade a trained skill to specialized, or cancel out an inability; _or_ become trained in using one of their special abilities            |
 | 5   | **Other Options**            | In place of one of the above: reduce the additional Speed cost of worn armor by 1; _or_ permanently increase recovery rolls by +2; _or_ choose another ability from their type |
 
-> **Pending verification.** This wording is paraphrased from the dialogue, not transcribed from the book. It is to be checked against the printed starter set and corrected before implementation.
+> **Verified** against the printed starter set. This wording is the reference text the checkboxes carry.
 
 **Checking a step changes no other value.** It does not deduct the 4 XP, raise a pool, or add a skill. See §5.6.
 
@@ -473,6 +475,8 @@ Cypher `type` is the one enum here that the rules actually enforce (`manifest | 
 
 1. **Custom numeric inputs are permitted, against `client.md`.** That file says "Never create a custom input, button, or control." A large, boxed, two-digit numeric input styled to match the editable number displays is exactly a custom control — and it is required, because the fill-means-interactive convention only holds if inputs share the vocabulary. Recorded as a deliberate amendment, not an oversight.
 
+   **They live in `app-ui/`, not `custom-ui/`.** Their font size, border treatment, and padding differ drastically from the standard `Input`, which makes them app vocabulary rather than a general-purpose control. The amendment is therefore scoped: `custom-ui/` keeps its rule intact, and the boxed number display and input are app-level components.
+
 2. **The box convention.** Every number is boxed. Filled = interactive, bordered = not. Project-wide, both modes, both roles.
 
 3. **Notification altitude.** Toasts report at the highest semantic level available; constituent field changes are suppressed. Never emitted for reordering or for notes.
@@ -488,10 +492,10 @@ Cypher `type` is the one enum here that the rules actually enforce (`manifest | 
 ### Component work this story implies
 
 - **The adjustment modal** — the parameterised primitive of §5.13, shared with the GM story.
-- **A boxed numeric display component** with filled and bordered variants, and a matching **boxed numeric input**.
+- **A boxed numeric display component** with filled and bordered variants, and a matching **boxed numeric input** — both in `app-ui/`, per the scoping note in §6.1.
 - **A collapsible list-row component** for abilities and cyphers — header always visible, body expandable.
 - **The fixed-top contextual action bar.**
-- **`ICON_MAP` additions** for the five tabs and for the pool, XP, recovery, and condition labels. The map has none of these, and an unmapped name renders **nothing, silently**.
+- **`ICON_MAP` additions** for the five tabs and for the pool, XP, recovery, and condition labels — **done**. An unmapped name still renders **nothing, silently**, so any concept added later needs its entry first.
 
 ---
 
@@ -521,6 +525,5 @@ Cypher `type` is the one enum here that the rules actually enforce (`manifest | 
 ### Recorded risks
 
 - **The Effort formula may read as exhaustive.** It accounts for Edge, armor, and Impaired, and is silent about cyphers, abilities, and temporary conditions that also modify cost.
-- **The advancement rules text is paraphrased**, pending a check against the printed starter set.
-- **Local write queueing** from the creation story's §5.5 applies here too, with the same unresolved ordering and conflict questions — now with player-to-player writes in the mix, since giving an item writes into another character's sheet.
+- **Local write queueing** from the creation story's §5.5 applies here too, now resolved: ordered per-device replay, last-write-wins per field path, and — because giving an item writes into another character's sheet — a **server-side command** for the two operations that span two records, so neither can half-land.
 - **A dismissed intrusion is easy to ignore.** The reminder bar is the only pressure, and nothing escalates.

@@ -243,7 +243,7 @@ export const ICON_MAP = {
   // sun / moon             // Theme toggle (light / dark)
   // palette                // Character colour swatch
   // user                   // Name column (GM table)
-  hourglass: 'hourglass',   // Initiative column
+  hourglass: 'hourglass', // Initiative column
   // layers                 // Level column
   // check                  // Turn taken
   // x                      // Recovery exhausted (all four slots spent)
@@ -255,9 +255,9 @@ export const ICON_MAP = {
   // arrow-left-stroke      // Return to GM view
   // info-circle            // Tooltip / helper info
   // check-circle           // Save indicator, saved
-  // alert-circle           // Save indicator, failed
+  'alert-circle': 'error', // Save indicator, failed
   // refresh                // New Round
-  thunder: 'flash_on',      // GM Intrusion
+  thunder: 'flash_on', // GM Intrusion
   // play                   // Start / Restart Initiative
   // stop                   // End Initiative
   // list-ul                // Event Log

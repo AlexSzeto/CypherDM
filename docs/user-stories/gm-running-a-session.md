@@ -178,7 +178,7 @@ The in-play character sheet layout, with identical affordances. The GM can chang
 | Edit-mode button                  | **Not shown**                                                                                         |
 | Remove from session               | At the bottom of the Overview tab; GM-only; **disabled while the character has an active connection** |
 
-Delete-character remains the player's, on the player's edit mode, reachable by the GM only by opening the sheet the way a player would — from the home page, outside GM mode.
+Delete-character remains the player's, on the player's edit mode, reachable by the GM only by opening the sheet the way a player would — from the home page, outside GM mode. Doing so **claims that character's seat**, which is why it is available outside a session and blocked during one, when the player's own device holds it.
 
 ### 3.6 Notes tab
 
@@ -230,7 +230,9 @@ GM data
 
 **Roster membership is created automatically** the first time a character's device connects, and persists thereafter. It is removed only by the GM's explicit "Remove from session", or by cascade when the character itself is deleted.
 
-**Connection state is never persisted.** It is derived live from the SSE connection and exists only in memory.
+**The delete cascade is total.** Deleting a character removes its roster entry, drops it from any pending intrusion's participants, and nulls any `giftedTo` pointing at it, auto-resolving the intrusion if that leaves no pending participants. None of this is expected to arise in real use; it exists so the app cannot be walked into a state it can never leave.
+
+**Connection state is never persisted.** It is derived live from the SSE connection and exists only in memory. It follows the **seat** a device has claimed — a device that opened this character from the home page — and not merely whichever sheet happens to be on screen. The GM's own view of a sheet claims no seat and never marks a character connected.
 
 ### 4.2 Read but not written by this flow
 
@@ -298,6 +300,8 @@ A second list would have to be reconciled with the roster on every membership ch
 A character joins the roster the first time their device connects. There is no add-to-session interaction.
 
 Removal is GM-only, buried inside the character's own sheet, and **unavailable while that character is connected** — a connected device would simply re-add itself, so a removal that appeared to work and then silently reverted would be worse than no button at all.
+
+**Connected means the seat is claimed**, not that a sheet is open somewhere. A device claims a character by opening it from the home page and holds it until it goes home; the home page disables a character already claimed by another connected client, so one character cannot be held twice. The GM's view of a sheet from inside the dashboard claims nothing — if it did, inspecting a character would disable the very button used to remove them.
 
 Deleting the character outright is a **separate action belonging to the player**, in the player's edit mode. The GM reaches it only by opening the sheet from the home page, outside GM mode. Both actions take a single confirmation; navigation depth is the safety mechanism rather than escalating confirmation, on the grounds that a double confirmation is theatre and burying the control further is the better lever.
 
@@ -389,6 +393,8 @@ The modal therefore becomes a live resolution view rather than a fire-and-forget
 
 No description field: the GM narrates the fiction aloud, and the app carries only the mechanical transaction.
 
+**Resolution is a single server-side command**, not a set of patches, because accepting with a gift moves XP between two character records. It emits one report rather than three XP movements.
+
 **Reversed:** rolled-1 intrusions were originally left entirely manual, on the grounds that building resolution machinery for a possible −1 XP was disproportionate. That reasoning was wrong about the cost — the machinery already exists for targeted intrusions, so a free intrusion is a checkbox and a third `type` value, not a new mechanism. It is now a first-class intrusion type.
 
 The three types differ only in what the player is offered:
@@ -436,7 +442,7 @@ This follows directly from §5.1. The GM's supplementary materials, including a 
 - **A table component.** `custom-ui/layout/` has none. Borderless, icon-only headers, horizontally scrollable, per-cell tap targets, row colouring and de-emphasis.
 - **The tap-tooltip clone** described above.
 - **The adjust-value modal**, reusable across every numeric field in the app.
-- **`ICON_MAP` additions** for Might, Speed, Intellect, Initiative, Level, XP, Recovery, and each condition state. The map currently has none of these, and an unmapped name renders **nothing, silently**. Icon selection is deferred to implementation grooming; given how specific these are, custom SVGs are the likely outcome rather than a generic library.
+- **`ICON_MAP` additions** for Might, Speed, Intellect, Initiative, Level, XP, Recovery, and each condition state — **done**, along with the three GM tab icons. An unmapped name still renders **nothing, silently**, so any concept added later needs its entry first.
 - **Tab icons** for the GM page's three tabs, same constraint.
 
 ---
@@ -475,4 +481,4 @@ This follows directly from §5.1. The GM's supplementary materials, including a 
 
 - **The event log dies on browser reload.**
 - **Cypher overload is invisible until it has already happened** — there is no approaching-limit warning.
-- **Local write queueing from the previous story's §5.5 now applies to GM data too**, with the same unresolved ordering and conflict questions.
+- **Local write queueing from the previous story's §5.5 applies to GM data too**, on the same resolved terms: ordered per-device replay and last-write-wins per field path, with intrusion resolution handled as a **server-side command** because it moves XP between two character records.

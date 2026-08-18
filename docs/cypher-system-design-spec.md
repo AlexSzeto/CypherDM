@@ -85,9 +85,15 @@ The server must maintain a unified state for each character. Below are the requi
 - **Equipment:** Array of objects.
   - `Name` (String)
   - `Description` (String - free text, rendered as the row's parenthetical)
-- **Currency:** `Amount` (Integer), `Name` (String - supplied by GM configuration; falls back to the generic term "currency"). Displayed as the pinned first row of the Equipment list.
+- **Currency:** `Amount` (Integer). The display name is **not stored on the character** - it is read from the GM Object's `Currency Name` and falls back to the generic term "currency" while unset. Displayed as the pinned first row of the Equipment list.
 - **Notes:** (String - free text).
-- **Advancement:** Five Booleans - the five advancement steps a character may spend XP on. Spending XP on **four** of the five raises the character to the next tier. These are **bookkeeping checkboxes only**: the app records which steps have been taken and does not apply their mechanical effects. The player reads the rulebook and manually edits the affected values (pool maxima, Edge, Effort, skills) themselves.
+- **Advancement:** Five Booleans - the five advancement steps a character may spend XP on. Spending XP on **four** of the five raises the character to the next tier. Each step may be chosen once. These are **bookkeeping checkboxes only**: the app records which steps have been taken and does not apply their mechanical effects. The player reads the rulebook and manually edits the affected values (pool maxima, Edge, Effort, skills) themselves.
+  - _Increasing Capabilities:_ assign 4 new points, distributed as the player chooses, permanently added to their stat Pools.
+  - _Moving Toward Perfection:_ increase one Edge stat by 1.
+  - _Extra Effort:_ Effort score increases by 1, raising how many levels may be applied to a roll.
+  - _Skills:_ become trained in a new skill; _or_ upgrade a trained skill to specialized, or cancel out an inability; _or_ become trained in using one of their special abilities.
+  - _Other Options:_ in place of one of the above - reduce the additional Speed cost of worn armor by 1; _or_ permanently increase recovery rolls by +2; _or_ choose another ability from their type.
+  - The reference wording each checkbox carries is verified and recorded in _Player playing a session_ §3.8.
 
 ### 3.2 GM Object
 
@@ -117,6 +123,17 @@ A single persistent record for the GM, maintained on the same terms as a Charact
     - `Resolution` (Enum: Pending, Accepted, Refused)
     - `Gifted To` (String or null - the Character ID receiving the 1 XP granted on Accept).
 
+### 3.3 Write Model and Synchronisation
+
+Every surface in the app writes through one contract.
+
+- **Field-level patches, each carrying an actor.** Whole-object writes are not used: the GM writes directly into player sheets, so concurrent writers genuinely exist, and a whole-object write from a stale client would silently erase another party's change. The actor tag lets the app skip notifying the originator of their own edit, and tell a recipient that a change came from the GM.
+- **Conflict rule: last-write-wins per field path.** There is no rejection and no merge interface. The cost of a collision is one field, which is the reason field-level granularity was chosen.
+- **Ordered local queueing.** Each device keeps a FIFO queue with a client sequence number, replayed in order on reconnect. On a local network a dropout is the failure mode that matters, not latency.
+- **Operations spanning two records are commands, not patches.** Giving an item between characters and resolving an intrusion both write to two records and land as a single atomic server call, so a dropout cannot duplicate or destroy the thing in transit.
+- **List items carry a server-assigned identifier.** Skills, abilities, attacks, equipment, cyphers, and creatures are addressed by identifier rather than by array position, so a concurrent reorder cannot redirect a patch onto the wrong row.
+- **Connection state is derived, never persisted.** It follows the seat a device has claimed (see §4.3) and lives only in memory.
+
 ## 4. Functional Interfaces
 
 ### 4.1 Player Interface (Interactive Character Sheet)
@@ -138,3 +155,12 @@ A single persistent record for the GM, maintained on the same terms as a Charact
   - **Initiative:** Starting or restarting initiative first asks the GM for the NPC group's Target Number, then prompts every player to answer whether they act before or after the NPCs. The app never rolls; players roll physically and apply Effort by rolling against a lower number than the one displayed to them.
   - **Loot Distribution:** The GM opens the player's character sheet and adds the Cypher or item through the sheet's own interface. There is no separate distribution form — the GM has full write access to every player sheet.
 - **Encounter/Lore Module:** A plain-text scratchpad for GM campaign notes, private to the GM. NPC levels are tracked in the encounter grid's Level column.
+
+### 4.3 Identity, Seats, and Connection State
+
+There is no login. A device's identity is the **seat** it holds.
+
+- Opening a character from the home page **claims that character's seat**. The device is that character until it releases the seat by returning home, and the claim is what the app reports as the character's connection state.
+- **A seat cannot be held twice.** The home page renders a character disabled while another connected client holds it. Without this, two devices could hold one character and connection state would carry no meaning.
+- **GM mode claims no seat.** Neither the GM dashboard nor the GM's view of a character sheet from within it registers that character as connected - otherwise inspecting a sheet would disable the very control used to remove that character from the session.
+- A GM who leaves the dashboard and opens a player's sheet from the home page **is** assuming that character's identity. This is acceptable outside a session and prevented during one by the disabled seat.
