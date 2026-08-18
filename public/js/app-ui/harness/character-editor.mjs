@@ -22,6 +22,7 @@ import {
   VerticalLayout,
 } from '../../custom-ui/themed-base.mjs'
 import { getCharacter, patchCharacter } from '../character-api.mjs'
+import { SaveIndicator } from '../sync/save-indicator.mjs'
 
 const ACTOR = 'harness'
 const POOLS = ['might', 'speed', 'intellect']
@@ -148,8 +149,13 @@ export function CharacterEditor({ id, onBack }) {
   }, [reload])
 
   /**
-   * Commit one field. The server's response is the new truth, so the record is
-   * re-seeded from it rather than from the local edit.
+   * Commit one field. The write is queued, so the promise settles when it
+   * actually lands — which during a dropout may be much later. The server's
+   * response is the new truth, so the record is re-seeded from it.
+   *
+   * A transport failure is deliberately not surfaced here: the queue owns that
+   * state and the save indicator reports it. Only a permanent rejection — a
+   * bad path, or a character that is gone — reaches the error panel.
    */
   const commit = useCallback(
     async (path, value) => {
@@ -190,8 +196,15 @@ export function CharacterEditor({ id, onBack }) {
         >
           Back to roster
         <//>
-        <${Button} variant="medium-icon-text" icon="refresh" onClick=${reload}>
-          Reload from server
+        <${HorizontalLayout} gap="medium" alignItems="center" fitContent>
+          <${SaveIndicator} characterId=${id} />
+          <${Button}
+            variant="medium-icon-text"
+            icon="refresh"
+            onClick=${reload}
+          >
+            Reload from server
+          <//>
         <//>
       <//>
       ${

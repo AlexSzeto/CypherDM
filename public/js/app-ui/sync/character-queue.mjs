@@ -30,10 +30,9 @@ function attachOnlineListener() {
 /**
  * Get (or create) the queue for a character.
  * @param {string} id
- * @param {string} [actor]
  * @returns {Object} the queue
  */
-export function getCharacterQueue(id, actor = ACTOR_FALLBACK) {
+export function getCharacterQueue(id) {
   const existing = queues.get(id)
   if (existing) return existing.queue
 
@@ -44,10 +43,19 @@ export function getCharacterQueue(id, actor = ACTOR_FALLBACK) {
   }
 
   entry.queue = createPatchQueue({
+    // The actor travels with each batch rather than with the queue: a queue
+    // may be created by whichever surface subscribes to its state first, which
+    // is not necessarily the surface doing the writing.
+    //
     // `patchCharacterBatch` throws a PermanentSendError on a 4xx, which is
     // the queue's signal to drop the batch rather than retry it forever.
-    send: ({ clientSeq, patches }) =>
-      patchCharacterBatch(id, patches, actor, clientSeq),
+    send: ({ clientSeq, patches, context }) =>
+      patchCharacterBatch(
+        id,
+        patches,
+        context?.actor ?? ACTOR_FALLBACK,
+        clientSeq,
+      ),
     onStateChange: (status) => {
       entry.status = status
       for (const listener of entry.listeners) listener(status)

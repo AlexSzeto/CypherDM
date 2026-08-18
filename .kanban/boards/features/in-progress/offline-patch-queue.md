@@ -37,7 +37,7 @@ A client editing a character carries a save indicator that tells the truth. Edit
 
 ### Phase 2 — The indicator tells the truth on screen
 
-- [ ] Complete initial implementation
+- [x] Complete initial implementation
   - Add `public/js/app-ui/sync/save-indicator.mjs` exporting `SaveIndicator({ characterId })` — a persistent inline element (not a toast) subscribing via `subscribeSyncState`. It renders three states: `saved` ("Saved", success color, `check` icon), `saving` ("Saving…", secondary color, `refresh` icon), and `notSaving` ("Not saving — N changes waiting", danger color, `warning` icon, where N is the pending count). It must subscribe on mount and unsubscribe on unmount.
   - Render `SaveIndicator` in `public/js/app-ui/harness/character-editor.mjs`, in the `HorizontalEdgesLayout` header row beside "Reload from server", so it is visible the whole time a character is open.
   - Have the editor stop swallowing failures into its error panel for queued writes: `commit` no longer sets `error` on a network failure, because the queue owns that state now and the indicator reports it. A permanent 4xx rejection still surfaces in the error panel.

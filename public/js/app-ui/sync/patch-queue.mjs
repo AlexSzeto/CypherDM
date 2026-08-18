@@ -12,6 +12,17 @@
  */
 import { log } from '../../custom-ui/logger.mjs'
 
+/**
+ * Two contexts match when they are the same value or carry the same actor.
+ * @param {*} a
+ * @param {*} b
+ * @returns {boolean}
+ */
+function sameContext(a, b) {
+  if (a === b) return true
+  return Boolean(a && b && a.actor === b.actor)
+}
+
 /** Backoff schedule in milliseconds; the last delay repeats indefinitely. */
 export const DEFAULT_RETRY_DELAYS = [500, 1000, 2000, 5000, 10000, 30000]
 
@@ -94,6 +105,7 @@ export function createPatchQueue({
       const result = await send({
         clientSeq: entry.clientSeq,
         patches: entry.patches,
+        context: entry.context,
       })
       pending.shift()
       failureCount = 0
@@ -140,12 +152,19 @@ export function createPatchQueue({
      * fifty writes of the same field. Ordering between different paths is
      * untouched, and a batch already in flight is never mutated.
      *
+     * Coalescing is confined to batches sharing the same `context`, so a write
+     * made by one actor is never folded into another's.
+     *
      * @param {Array<{path: string, value: *}>} patches
+     * @param {*} [context] - opaque, passed through to `send`
      * @returns {Promise<*>} resolves with the send result for this batch
      */
-    enqueue(patches) {
+    enqueue(patches, context = null) {
+      const coalescible = (entry) =>
+        !entry.sent && sameContext(entry.context, context)
+
       for (const entry of pending) {
-        if (entry.sent) continue
+        if (!coalescible(entry)) continue
         for (const patch of patches) {
           const existing = entry.patches.find((p) => p.path === patch.path)
           if (existing) existing.value = patch.value
@@ -156,7 +175,8 @@ export function createPatchQueue({
         (patch) =>
           !pending.some(
             (entry) =>
-              !entry.sent && entry.patches.some((p) => p.path === patch.path),
+              coalescible(entry) &&
+              entry.patches.some((p) => p.path === patch.path),
           ),
       )
 
@@ -164,7 +184,7 @@ export function createPatchQueue({
         // Fully coalesced into an existing batch; resolve when that one lands.
         const carrier = pending.find(
           (entry) =>
-            !entry.sent &&
+            coalescible(entry) &&
             entry.patches.some((p) => p.path === patches[0].path),
         )
         return carrier ? carrier.promise : Promise.resolve(null)
@@ -179,6 +199,7 @@ export function createPatchQueue({
       const entry = {
         clientSeq: nextSeq++,
         patches: remaining,
+        context,
         resolve,
         reject,
         promise,

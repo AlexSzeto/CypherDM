@@ -64,10 +64,33 @@ PATCH /api/characters/:id
 - **`actor` is required, echoed, and not persisted.** It exists so a later feature can skip notifying the originator of their own edit, and can tell a player that a change came from the GM.
 - **`clientSeq` is optional and echoed back**, for the client-side queue to match responses to queued writes.
 
+## Client write path
+
+Nothing in the browser calls `PATCH` directly. `patchCharacter(id, patches, actor)` in `public/js/app-ui/character-api.mjs` enqueues onto the per-character queue in `public/js/app-ui/sync/`:
+
+- **One queue per character id**, FIFO, with a client sequence number sent as `clientSeq` and echoed back. One request is in flight at a time, which is what makes ordering guaranteed rather than probable.
+- **A dropout is the failure that matters**, not latency: a phone wanders out of range mid-session and comes back a minute later. Writes made in between are held and replayed in order; the promise returned by `patchCharacter` stays pending until the write actually lands.
+- **Retry backoff** runs 500 ms, 1 s, 2 s, 5 s, 10 s, then 30 s repeating. The `online` event flushes every queue immediately rather than leaving them to sit out the remaining wait.
+- **A 4xx is permanent** — a bad path, or a character that is gone. That batch is dropped and rejected rather than retried forever, because a wedged queue makes the indicator lie. A 5xx or a rejected `fetch` is retried.
+- **Repeated writes to the same path coalesce** while still unsent, so holding a key down does not queue fifty writes of one field. A batch already in flight is never mutated, and coalescing never crosses actors.
+
+### The save indicator
+
+`SaveIndicator` (`public/js/app-ui/sync/save-indicator.mjs`) renders the queue's derived state and belongs on every surface that edits a character. It is persistent, never a toast — a stale reassurance is worse than a visible failure.
+
+| State       | Shows                            | Means                                                  |
+| ----------- | -------------------------------- | ------------------------------------------------------ |
+| `saved`     | "Saved"                          | Nothing pending, last send succeeded.                  |
+| `saving`    | "Saving…"                        | A send is in flight or a batch is waiting.             |
+| `notSaving` | "Not saving — N changes waiting" | The last send failed; N writes are still held locally. |
+
+The queue stays `notSaving` through its retries: a retry in flight is not evidence that the write is landing, so the indicator does not soften until one actually does.
+
+The queue is **not** persisted across a page reload. A reload is a deliberate act, unlike a dropout; if real play shows accidental reloads mid-session, revisit.
+
 ## Deferred
 
 - List add/update/remove with server-assigned `uid`s — `character-list-items`.
-- Client-side FIFO queue, ordered replay, and the save indicator — `offline-patch-queue`. Until then the client patches with a plain `fetch`.
 - Live push to other devices — `live-sync-and-notifications`.
 - Delete cascades into the GM roster, intrusion participants, and `giftedTo` pointers — those records arrive with `gm-domain-and-page-shell` and `gm-intrusions`, and each cleans up its own reference. Delete currently removes the character record only.
 

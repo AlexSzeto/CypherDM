@@ -22,7 +22,9 @@ async function request(url, options = {}) {
   try {
     response = await fetch(url, options)
   } catch (error) {
-    log('characters', 'error', `Request to ${url} failed: ${error}`)
+    // A transport failure is a dropout, not a fault: the queue retries it and
+    // the save indicator reports it, so this is a warning, not an error.
+    log('characters', 'warn', `Request to ${url} failed: ${error}`)
     throw error
   }
 
@@ -109,7 +111,7 @@ export async function patchCharacterBatch(id, patches, actor, clientSeq) {
  * @returns {Promise<Object>} the updated record
  */
 export async function patchCharacter(id, patches, actor) {
-  return getCharacterQueue(id, actor).enqueue(patches)
+  return getCharacterQueue(id).enqueue(patches, { actor })
 }
 
 /**
