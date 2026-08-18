@@ -39,7 +39,7 @@ Any child card **not** in `done` is unfinished. Also scan every card for uncheck
 
 If anything is unfinished, list it grouped by card and lane, then ask how to proceed:
 
-- **Finish it now** — stop and let the user run `/implement-story <filename>`. Re-run this skill afterwards.
+- **Finish it now** — stop and let the user run `/implement-story <filename>`, then `/complete-story <filename>`. Re-run this skill afterwards.
 - **Carry it forward** — the card stays on the board, unlinked from this feature or relinked to the next one. It is excluded from the summary's "What shipped" and recorded under "Deferred / descoped" instead.
 - **Abandon it** — move the card to `abandoned/` via `move-feature.mjs`. Record it under "Deferred / descoped" with the reason.
 

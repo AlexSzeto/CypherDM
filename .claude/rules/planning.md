@@ -29,7 +29,7 @@ All cards live in a single Kanban Lite board directory, organized into status su
 - `.kanban/boards/features/planned/` — **scoped to the active feature**: cards committed to the in-progress rollout but not yet groomed
 - `.kanban/boards/features/groomed/` — fully specified cards ready to pull into development
 - `.kanban/boards/features/in-progress/` — cards currently being implemented
-- `.kanban/boards/features/done/` — completed cards awaiting archival. The user manually moves cards here once all phases are finished.
+- `.kanban/boards/features/done/` — completed cards awaiting archival. Cards land here via `complete-story`, which the user runs once all phases are finished; an agent never makes the move on its own initiative.
 - `.kanban/boards/features/abandoned/` — cards shelved at any stage of the lifecycle
 
 Each card is a markdown file with YAML frontmatter. The `status` field mirrors the subdirectory name. All card filenames use kebab-case slugs with no sequential numbering.
@@ -47,7 +47,7 @@ The flow:
 1. Move the card back: `node scripts/move-feature.mjs <filename> done in-progress`.
 2. Add the fix as a **sibling checkbox** named after it, next to that phase's `Complete initial implementation` (the same shape as any post-phase fix).
 3. Implement and verify it.
-4. The **user** moves the card back to `done` once satisfied. As with the first pass, an agent never makes that move on its own.
+4. The **user** runs `complete-story` to move the card back to `done` once satisfied. As with the first pass, an agent never makes that move on its own.
 
 This is the one sanctioned backwards move. It does not license dragging cards backwards through the grooming lanes (`groomed` → `planned`, say), which the skills still forbid — a card that has been specified does not become unspecified.
 
@@ -135,7 +135,7 @@ create-feature → groom-feature → implement-feature → (work happens) → ar
 1. **`create-feature`** captures the rollout as a card in `backlog` with `labels: ['feature']`.
 2. **`groom-feature`** develops its scope, pulls existing cards in, and spins up new stories. Re-runnable at any time, including mid-implementation.
 3. **`implement-feature`** cuts a branch named after the feature `id` from `main`, moves the feature card to `in-progress`, and sweeps its recorded children into `planned`. Grooming first is recommended but not required — an ungroomed feature requires explicit user consent to proceed.
-4. Stories and tickets are groomed and implemented individually while the feature stays `in-progress`. As each child finishes, the user moves **that child** to `done`.
+4. Stories and tickets are groomed and implemented individually while the feature stays `in-progress`. As each child finishes, the user runs `complete-story` to move **that child** to `done`.
 5. **`archive-feature`** runs pre-merge, condensing the feature and its completed children into a single dated summary and drafting the PR message.
 
 **The feature card never moves to `done`.** Only children do. The feature card stays `in-progress` for the entire life of the branch and is deleted by `archive-feature` when the summary is written — archiving _is_ the act of completing a feature, so there is no window in which the rollout is finished but not yet archived. `archive-feature` blocks if any child is still outside `done`, but it expects to find the feature card itself in `in-progress`.
@@ -259,6 +259,7 @@ Each nested task bullet describes a single outcome that can be verified — by a
 | Story   | `create-story`      | Capture a freeform idea as a card with a story-tier category.                                       |
 | Story   | `groom-story`       | Develop a full spec from a card (or scratch) via Q&A. Moves the card to `groomed` or `in-progress`. |
 | Story   | `implement-story`   | Execute a card's phases, running the full test suite at each phase boundary.                        |
+| Story   | `complete-story`    | Verify every tracked checkbox is done, then move the card `in-progress` → `done`.                   |
 | Story   | `create-ticket`     | Capture a single bug as a ready-to-implement spec, skipping the Q&A dialogue.                       |
 
 Supporting skills: `stage-and-commit` (commits work, flips phase checkboxes, refreshes feature checklists), `update-docs`, `test`, `sync-skills`.
