@@ -23,7 +23,7 @@ A character record that lives on the server and saves itself as the player types
 ## Stories
 
 - [x] `character-record-api.md` — Character Record API
-- [ ] `offline-patch-queue.md` — Offline Patch Queue and Save Indicator
+- [x] `offline-patch-queue.md` — Offline Patch Queue and Save Indicator
 - [ ] `character-list-items.md` — Character List Items and Identifiers
 
 ## Tickets

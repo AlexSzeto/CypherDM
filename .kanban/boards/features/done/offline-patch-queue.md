@@ -2,16 +2,16 @@
 version: 1
 id: 'offline-patch-queue'
 boardId: 'features'
-status: 'in-progress'
+status: 'done'
 priority: 'high'
 assignee: null
 dueDate: null
 created: '2026-08-18T05:28:38Z'
-modified: '2026-08-18T05:50:00Z'
-completedAt: null
+modified: '2026-08-18T05:56:51.226Z'
+completedAt: '2026-08-18T05:57:00Z'
 labels: ['story']
 attachments: []
-order: 'a1'
+order: 'a0V'
 metadata:
   feature: 'character-data-and-sync'
 ---
