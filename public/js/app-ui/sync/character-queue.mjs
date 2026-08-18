@@ -5,7 +5,7 @@
  * so writes replay in order after a dropout and one place owns the sync state
  * the save indicator renders.
  */
-import { patchCharacterBatch } from '../character-api.mjs'
+import { patchCharacterBatch, patchListItemBatch } from '../character-api.mjs'
 import { createPatchQueue } from './patch-queue.mjs'
 
 const ACTOR_FALLBACK = 'client'
@@ -49,13 +49,19 @@ export function getCharacterQueue(id) {
     //
     // `patchCharacterBatch` throws a PermanentSendError on a 4xx, which is
     // the queue's signal to drop the batch rather than retry it forever.
-    send: ({ clientSeq, patches, context }) =>
-      patchCharacterBatch(
-        id,
-        patches,
-        context?.actor ?? ACTOR_FALLBACK,
-        clientSeq,
-      ),
+    send: ({ clientSeq, patches, context }) => {
+      const actor = context?.actor ?? ACTOR_FALLBACK
+      return context?.uid
+        ? patchListItemBatch(
+            id,
+            context.listName,
+            context.uid,
+            patches,
+            actor,
+            clientSeq,
+          )
+        : patchCharacterBatch(id, patches, actor, clientSeq)
+    },
     onStateChange: (status) => {
       entry.status = status
       for (const listener of entry.listeners) listener(status)

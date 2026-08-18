@@ -23,6 +23,7 @@ import {
 } from '../../custom-ui/themed-base.mjs'
 import { getCharacter, patchCharacter } from '../character-api.mjs'
 import { SaveIndicator } from '../sync/save-indicator.mjs'
+import { CharacterLists } from './character-lists.mjs'
 
 const ACTOR = 'harness'
 const POOLS = ['might', 'speed', 'intellect']
@@ -49,7 +50,7 @@ function readPath(record, path) {
  * @param {(path: string, value: *) => void} props.commit - write one field to the server
  * @returns {preact.VNode}
  */
-function EditorFields({ record, stage, commit }) {
+function EditorFields({ record, stage, commit, onRecord }) {
   const textField = (path, label) => html`
     <${Input}
       key=${path}
@@ -121,6 +122,8 @@ function EditorFields({ record, stage, commit }) {
           <${Caption}>Last saved ${record.modifiedAt}<//>
         <//>
       <//>
+
+      <${CharacterLists} record=${record} onRecord=${onRecord} />
     <//>
   `
 }
@@ -220,6 +223,7 @@ export function CharacterEditor({ id, onBack }) {
               record=${record}
               stage=${stage}
               commit=${commit}
+              onRecord=${setRecord}
             />`
           : html`<${Caption}>Loading…<//>`
       }

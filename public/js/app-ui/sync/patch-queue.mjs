@@ -13,14 +13,19 @@
 import { log } from '../../custom-ui/logger.mjs'
 
 /**
- * Two contexts match when they are the same value or carry the same actor.
+ * Two contexts match when they are the same value, or address the same target
+ * on behalf of the same actor. Two different rows both patching `name` must
+ * not be treated as the same path, which is why the row identity is part of
+ * this comparison rather than part of the patch path.
+ *
  * @param {*} a
  * @param {*} b
  * @returns {boolean}
  */
 function sameContext(a, b) {
   if (a === b) return true
-  return Boolean(a && b && a.actor === b.actor)
+  if (!a || !b) return false
+  return a.actor === b.actor && a.listName === b.listName && a.uid === b.uid
 }
 
 /** Backoff schedule in milliseconds; the last delay repeats indefinitely. */

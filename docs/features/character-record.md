@@ -64,6 +64,24 @@ PATCH /api/characters/:id
 - **`actor` is required, echoed, and not persisted.** It exists so a later feature can skip notifying the originator of their own edit, and can tell a player that a change came from the GM.
 - **`clientSeq` is optional and echoed back**, for the client-side queue to match responses to queued writes.
 
+## List rows
+
+Skills, abilities, attacks, cyphers, and equipment are addressed by a **server-assigned `uid`**, never by array position. Two people write to one character at once — the GM reaches into a player's sheet while the player is editing it — so an index would let a concurrent insert or delete silently redirect the other party's edit onto a different row, and last-write-wins would settle on a value nobody typed.
+
+| Method   | Path                  | Body                             | Answers                          |
+| -------- | --------------------- | -------------------------------- | -------------------------------- |
+| `POST`   | `/:id/:listName`      | `{ actor, seed? }`               | `201 { record, item }`           |
+| `PATCH`  | `/:id/:listName/:uid` | `{ actor, clientSeq?, patches }` | `200 { record, applied, actor }` |
+| `DELETE` | `/:id/:listName/:uid` | `{ actor }`                      | `200 { record }`                 |
+
+- `listName` is checked against an allowlist (`LIST_NAMES` in the domain sanitizer) before it can reach a property lookup on the record.
+- Row patch paths are validated against the **item** schema, with the same forbidden-segment and type rules as record patches. `uid` itself cannot be patched.
+- An unknown character, list, or uid answers `404`. A patch to a row that was concurrently removed therefore fails loudly rather than silently writing nothing.
+- `DELETE` answers with the record rather than `204`, because the client needs the surviving rows and a follow-up `GET` would race a concurrent write.
+- Rows have no order that matters and cannot be reordered; they render in insertion order.
+
+On the client, **structural operations bypass the patch queue** and go straight out: a queue that reordered an add against a row patch would address a row the server has not created yet. Row _patches_ ride the queue like any other write, identified by the batch's context (`{ actor, listName, uid }`) rather than by the patch path — which is why two rows both patching `name` never coalesce into each other. A new row is seeded locally with a `_localId` and takes the server's `uid` when the add resolves, per the `DynamicList` keying rule in `.claude/rules/client.md`.
+
 ## Client write path
 
 Nothing in the browser calls `PATCH` directly. `patchCharacter(id, patches, actor)` in `public/js/app-ui/character-api.mjs` enqueues onto the per-character queue in `public/js/app-ui/sync/`:
@@ -90,7 +108,6 @@ The queue is **not** persisted across a page reload. A reload is a deliberate ac
 
 ## Deferred
 
-- List add/update/remove with server-assigned `uid`s — `character-list-items`.
 - Live push to other devices — `live-sync-and-notifications`.
 - Delete cascades into the GM roster, intrusion participants, and `giftedTo` pointers — those records arrive with `gm-domain-and-page-shell` and `gm-intrusions`, and each cleans up its own reference. Delete currently removes the character record only.
 

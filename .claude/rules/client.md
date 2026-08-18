@@ -154,6 +154,8 @@ Character writes never call `fetch` directly. Every one goes through `patchChara
 
 Every surface that edits a character carries a `SaveIndicator` (`public/js/app-ui/sync/save-indicator.mjs`), rendered persistently — never as a toast. It reports `saved`, `saving`, or `notSaving` with the count of writes still waiting. See `docs/features/character-record.md` for the full contract.
 
+**Structural list operations bypass the queue.** Adding or removing a list row (`addListItem` / `removeListItem`) is sent immediately, because a queue that reordered an add against a row patch would address a row the server has not created yet. Row _patches_ go through the queue like any other write. Rows are always addressed by their server-assigned `uid`; a new row carries a local `_localId` only until the add resolves.
+
 Note that this is distinct from the Save/Revert pattern below: a character sheet has no save or revert controls anywhere. It saves itself.
 
 ## Save/Revert Pattern (settings and persistent records)
