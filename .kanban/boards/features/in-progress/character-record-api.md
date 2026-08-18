@@ -41,9 +41,9 @@ A character lives on the server and survives a restart. A participant can create
 
 ### Phase 2 — A character is editable from the browser
 
-- [ ] Complete initial implementation
+- [x] Complete initial implementation
   - Add `public/harness.html` — a copy of `public/index.html`'s head (theme cookie, fonts, importmap, boxicons) whose module entry is `/js/harness.mjs`.
-  - Add `public/js/harness.mjs` — the page root. Wraps everything in `Page`, subscribes to `currentTheme` with `currentTheme.subscribe`, and renders `AppHeader` with the title "Character Harness". Holds the selected character id in `useState`; shows the roster when none is selected and the editor when one is.
+  - Add `public/js/harness.mjs` — the page root. Wraps everything in `Page`, subscribes to `currentTheme` with `currentTheme.subscribe`, and renders an `H1` and a `Caption` as the page header (`app-ui/themed-base.mjs` and its `AppHeader` do not exist yet — they arrive with `app-shell-and-home-page`). Holds the selected character id in `useState`; shows the roster when none is selected and the editor when one is.
   - Add `public/js/app-ui/harness/character-roster.mjs` — lists characters from `GET /api/characters` in a `VerticalLayout`, one `Panel` per character showing name and id with an "Open" `Button`, plus a `Button` that POSTs a new character and opens it, and a per-row delete `Button color="danger"` that confirms via `showDialog` before calling `DELETE`.
   - Add `public/js/app-ui/harness/character-editor.mjs` — renders `Input` fields for `name`, `descriptor`, `type`, `focus`, `notes` and numeric inputs for `tier`, `xp`, `cypherLimit`, `effortLimit`, `currency.amount` and each of the nine pool values. Each field PATCHes its own dot path on `blur` (text) or `change` (numeric) with `actor: 'harness'`, and re-seeds from the response. A "Reload from server" `Button` re-fetches the record. No save or revert buttons — the sheet saves itself.
   - Add `public/js/app-ui/harness/character-api.mjs` — the fetch wrapper (`listCharacters`, `createCharacter`, `getCharacter`, `patchCharacter`, `deleteCharacter`) used by both components, logging failures via `log('harness', 'error', …)`. The offline queue story replaces the internals of `patchCharacter` here; keep the signature `patchCharacter(id, patches, actor)`.

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'preact/hooks'
 import { Page } from './custom-ui/layout/page.mjs'
 import { Panel } from './custom-ui/layout/panel.mjs'
 import { H1, H2, Caption, VerticalLayout } from './custom-ui/themed-base.mjs'
+import { Button } from './custom-ui/io/button.mjs'
 import { currentTheme } from './custom-ui/theme.mjs'
 import { log } from './custom-ui/logger.mjs'
 
@@ -34,6 +35,15 @@ function App() {
               Scaffolding is in place: Preact, htm, and goober are wired up and
               the themed base components are rendering. Feature pages land here
               next.
+            <//>
+            <${Button}
+              variant="medium-icon-text"
+              icon="arrow-out-up-right-square"
+              onClick=${() => {
+                window.location.href = '/harness'
+              }}
+            >
+              Character Harness (temporary)
             <//>
           <//>
         <//>
