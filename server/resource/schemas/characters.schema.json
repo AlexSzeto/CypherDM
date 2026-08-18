@@ -1,0 +1,182 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Characters data file",
+  "type": "object",
+  "properties": {
+    "version": { "type": "number" },
+    "characters": {
+      "type": "array",
+      "default": [],
+      "items": { "$ref": "#/definitions/character" }
+    }
+  },
+  "definitions": {
+    "pool": {
+      "type": "object",
+      "default": { "max": 0, "current": 0, "edge": 0 },
+      "properties": {
+        "max": { "type": "number", "default": 0 },
+        "current": { "type": "number", "default": 0 },
+        "edge": { "type": "number", "default": 0 }
+      }
+    },
+    "skill": {
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "default": "" },
+        "name": { "type": "string", "default": "" },
+        "proficiency": {
+          "type": "string",
+          "default": "trained",
+          "enum": ["trained", "specialized", "inability"]
+        },
+        "source": { "type": "string", "default": "" },
+        "description": { "type": "string", "default": "" }
+      }
+    },
+    "ability": {
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "default": "" },
+        "name": { "type": "string", "default": "" },
+        "source": { "type": "string", "default": "" },
+        "cost": { "type": "number", "default": 0 },
+        "variableCost": { "type": "boolean", "default": false },
+        "poolType": {
+          "type": ["string", "null"],
+          "default": null,
+          "enum": ["might", "speed", "intellect", null]
+        },
+        "execution": {
+          "type": ["string", "null"],
+          "default": null,
+          "enum": ["action", "enabler", null]
+        },
+        "description": { "type": "string", "default": "" }
+      }
+    },
+    "attack": {
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "default": "" },
+        "name": { "type": "string", "default": "" },
+        "description": { "type": "string", "default": "" },
+        "damage": { "type": "number", "default": 0 }
+      }
+    },
+    "cypher": {
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "default": "" },
+        "name": { "type": "string", "default": "" },
+        "level": { "type": "string", "default": "" },
+        "cypherType": {
+          "type": "string",
+          "default": "manifest",
+          "enum": ["manifest", "subtle"]
+        },
+        "effect": { "type": "string", "default": "" }
+      }
+    },
+    "equipmentItem": {
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "default": "" },
+        "name": { "type": "string", "default": "" },
+        "description": { "type": "string", "default": "" }
+      }
+    },
+    "character": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "default": "" },
+        "name": { "type": "string", "default": "" },
+        "color": { "type": "string", "default": "#888888" },
+        "descriptor": { "type": "string", "default": "" },
+        "type": { "type": "string", "default": "" },
+        "focus": { "type": "string", "default": "" },
+        "tier": { "type": "number", "default": 1 },
+        "pools": {
+          "type": "object",
+          "default": {},
+          "properties": {
+            "might": { "$ref": "#/definitions/pool" },
+            "speed": { "$ref": "#/definitions/pool" },
+            "intellect": { "$ref": "#/definitions/pool" }
+          }
+        },
+        "effortLimit": { "type": "number", "default": 1 },
+        "xp": { "type": "number", "default": 0 },
+        "recovery": {
+          "type": "object",
+          "default": {},
+          "properties": {
+            "bonus": { "type": "number", "default": 0 },
+            "used": {
+              "type": "array",
+              "default": [false, false, false, false],
+              "items": { "type": "boolean" }
+            }
+          }
+        },
+        "skills": {
+          "type": "array",
+          "default": [],
+          "items": { "$ref": "#/definitions/skill" }
+        },
+        "abilities": {
+          "type": "array",
+          "default": [],
+          "items": { "$ref": "#/definitions/ability" }
+        },
+        "attacks": {
+          "type": "array",
+          "default": [],
+          "items": { "$ref": "#/definitions/attack" }
+        },
+        "armor": {
+          "type": "object",
+          "default": {},
+          "properties": {
+            "name": { "type": "string", "default": "" },
+            "points": { "type": "number", "default": 0 },
+            "description": { "type": "string", "default": "" },
+            "speedPenalty": { "type": "number", "default": 0 }
+          }
+        },
+        "cypherLimit": { "type": "number", "default": 2 },
+        "cyphers": {
+          "type": "array",
+          "default": [],
+          "items": { "$ref": "#/definitions/cypher" }
+        },
+        "equipment": {
+          "type": "array",
+          "default": [],
+          "items": { "$ref": "#/definitions/equipmentItem" }
+        },
+        "currency": {
+          "type": "object",
+          "default": {},
+          "properties": {
+            "amount": { "type": "number", "default": 0 }
+          }
+        },
+        "notes": { "type": "string", "default": "" },
+        "advancement": {
+          "type": "object",
+          "default": {},
+          "properties": {
+            "increasingCapabilities": { "type": "boolean", "default": false },
+            "movingTowardPerfection": { "type": "boolean", "default": false },
+            "extraEffort": { "type": "boolean", "default": false },
+            "skills": { "type": "boolean", "default": false },
+            "otherOptions": { "type": "boolean", "default": false }
+          }
+        },
+        "createdAt": { "type": "string", "default": "" },
+        "modifiedAt": { "type": "string", "default": "" }
+      }
+    }
+  }
+}
