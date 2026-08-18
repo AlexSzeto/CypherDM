@@ -64,6 +64,8 @@ Two field names deviate from the printed rules terms on purpose, both to protect
 
 ## Deferred / descoped
 
+Every item below is also recorded on the Notes of the feature card that inherits it, under a heading of "Inherited from character-data-and-sync" — this list is the index, not the only copy.
+
 - **Delete cascades** into the GM roster, intrusion participants, and `giftedTo` pointers. Those records live on the GM Object, which does not exist until `gm-domain-and-page-shell`; each feature cleans up its own reference. Character delete currently removes the character record only.
 - **Two-record atomic commands** (giving an item, resolving an intrusion). The pattern is recorded, but no such endpoint ships here — `play-mode-equipment` and `gm-intrusions` add the real ones.
 - **Live push.** No SSE on this branch; it is request/response plus local queueing. `live-sync-and-notifications` adds push.

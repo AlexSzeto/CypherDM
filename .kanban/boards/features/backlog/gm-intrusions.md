@@ -7,7 +7,7 @@ priority: 'medium'
 assignee: null
 dueDate: null
 created: '2026-08-18T04:47:40Z'
-modified: '2026-08-18T04:47:40Z'
+modified: '2026-08-18T06:20:00Z'
 completedAt: null
 labels: ['feature']
 attachments: []
@@ -45,3 +45,9 @@ Pending intrusion state is **unavoidable server state**: a player whose tablet s
 Resolution moves XP between two character records, so it goes through a **server-side command** and emits one report rather than three XP movements. Gifting is the sole cross-player notification in the app.
 
 _Recorded risk:_ a dismissed intrusion is easy to ignore. The reminder bar is the only pressure and nothing escalates.
+
+**Inherited from character-data-and-sync (archived 2026-08-18):**
+
+- **This branch owns the intrusion half of the character-delete cascade.** Deleting a character must drop it from any pending intrusion's participants, null any `giftedTo` pointing at it, and auto-resolve the intrusion if that leaves no pending participants. Without this, deleting a character mid-intrusion leaves an intrusion nobody can resolve — a locked state. Unlikely in real use; cheap to prevent, expensive to hit.
+- **The two-record command pattern is described but not yet built.** `character-data-and-sync` established that operations touching two character records are single atomic server calls rather than pairs of patches, and shipped none of them. `play-mode-equipment` builds the first; reuse its shape here rather than inventing a second.
+- Resolution must not go through the client patch queue: like other structural operations it is one call, and a queue that reordered it against field patches could apply XP against a stale record.
