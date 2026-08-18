@@ -129,6 +129,6 @@ Phase-end test runs use the full suite (`npx vitest run`), not `--changed`.
 
 ## Completion
 
-When every phase checkbox is accounted for, report completion. Then instruct the user to move the completed card into the **Done** lane — either by dragging it on the board, or by running `node scripts/move-feature.mjs <filename>.md in-progress done`.
+When every phase checkbox is accounted for, report completion. Then instruct the user to close the card out with `/complete-story <filename>.md`, which verifies every tracked checkbox is `[x]` before moving it to the **Done** lane and refreshing the parent feature's checklist. Dragging the card on the board works too.
 
-Moving In Progress → Done is a manual user action; do not move the card automatically. Once in Done, the card is counted as complete on its parent feature's checklist, and `archive-feature` will fold it into the feature summary at merge time.
+Moving In Progress → Done is a manual user action; do not move the card automatically and do not invoke `complete-story` yourself. Once in Done, the card is counted as complete on its parent feature's checklist, and `archive-feature` will fold it into the feature summary at merge time.
