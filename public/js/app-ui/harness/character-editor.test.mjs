@@ -1,5 +1,11 @@
 import { html } from 'htm/preact'
-import { fireEvent, render, screen, waitFor } from '@testing-library/preact'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/preact'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CharacterEditor } from './character-editor.mjs'
@@ -58,6 +64,9 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  // vitest runs without `globals`, so testing-library's auto-cleanup hook is
+  // never registered — unmount by hand or trees pile up across tests.
+  cleanup()
   vi.unstubAllGlobals()
 })
 
@@ -90,5 +99,17 @@ describe('CharacterEditor', () => {
       expect(body.actor).toBe('harness')
       expect(body.patches).toEqual([{ path: 'name', value: 'Vess' }])
     })
+  })
+  it('leaves exactly one back button once the record loads', async () => {
+    // The loading and loaded states differ by one child, not by the whole
+    // tree; when they diverged at the root, the loading state's button was
+    // orphaned in the DOM instead of being unmounted.
+    render(html`<${CharacterEditor} id="char-1" onBack=${() => {}} />`)
+    await waitFor(() => expect(screen.getByLabelText('Name')).toBeTruthy())
+
+    const backButtons = [...document.querySelectorAll('button')].filter((b) =>
+      b.textContent.includes('Back to roster'),
+    )
+    expect(backButtons).toHaveLength(1)
   })
 })
